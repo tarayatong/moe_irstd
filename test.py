@@ -63,7 +63,7 @@ class Trainer(object):
 
         # Choose and load model (this paper is finished by one GPU)
 
-        model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter)
+        model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter, moe_stages=args.moe_stages)
 
         model           = model.cuda()
         model.apply(weights_init_xavier)
