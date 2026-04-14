@@ -35,7 +35,8 @@ router_params/
 *.zip
 *.jpg
 *.txt
-*mamba*
+mamba*
+vmamba.py
 *triton*
 *csm*
 model/kernels

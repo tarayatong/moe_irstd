@@ -22,8 +22,8 @@ class Trainer(object):
     def __init__(self, args):
         args.base_size = 256
         args.crop_size = 256
-        args.st_model = 'NUAA-SIRST_DNANet_28_05_2025_15_46_52_wDS'
-        args.model_dir = 'NUAA-SIRST_DNANet_28_05_2025_15_46_52_wDS/mIoU__DNANet_NUAA-SIRST_epoch.pth.tar'
+        args.st_model = 'NUAA-SIRST_DNANet_14_04_2026_11_55_28_wDS'
+        args.model_dir = 'NUAA-SIRST_DNANet_14_04_2026_11_55_28_wDS/mIoU__DNANet_NUAA-SIRST_epoch.pth.tar'
         args.model = 'DNANet'
         args.dataset = 'NUAA-SIRST'
         args.split_method = '50_50'
