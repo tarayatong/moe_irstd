@@ -73,8 +73,11 @@ def parse_args():
                     help='learning rate for alpha and beta in architect searching process')
     parser.add_argument('--arch_weight_decay', type=float, default=1e-3,
                         metavar='M', help='w-decay (default: 5e-4)')
+    parser.add_argument('--moe_stages', type=str, default='1,1,1,1',
+                        help='which stages use MoE, e.g. 1,1,1,1 for all, 0,0,1,1 for low-res only')
 
     args = parser.parse_args()
+    args.moe_stages = [bool(int(x)) for x in args.moe_stages.split(',')]
     args.base_size = 256
     args.crop_size = 256
     args.epochs = 1000

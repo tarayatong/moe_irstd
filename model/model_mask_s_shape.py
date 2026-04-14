@@ -12,7 +12,7 @@ from model.mobile_mamba import MobileMambaBlock
 logging.getLogger('thop').setLevel(logging.WARNING)
 
 class DNANet(nn.Module):
-    def __init__(self, num_classes, input_channels, block, num_blocks, nb_filter,stage=4, block_count=4):   # [16, 32, 64, 128, 256] [2,2,2,2]
+    def __init__(self, num_classes, input_channels, block, num_blocks, nb_filter,stage=4, block_count=4, moe_stages=None):   # [16, 32, 64, 128, 256] [2,2,2,2]
         super(DNANet, self).__init__()
         input_size=512
         self.relu = nn.ReLU(inplace = True)
@@ -20,6 +20,9 @@ class DNANet(nn.Module):
         # self.down  = nn.Upsample(scale_factor=0.5, mode='bilinear', align_corners=True)
         self.stage = stage
         self.block = block_count
+        if moe_stages is None:
+            moe_stages = [True] * stage
+        self.moe_stages = moe_stages
         self.node_list = nn.ModuleList([nn.ModuleList([nn.ModuleList([]) for _ in range(stage)]) for _ in range(block_count)])
         self.channel_squeeze_list = nn.ModuleList([nn.ModuleList([nn.ModuleList([]) for _ in range(stage)]) for _ in range(block_count)])
         # self.up_list = nn.ModuleList([nn.Upsample(scale_factor=2**i, mode='bilinear', align_corners=True) for i in range(stage)])
@@ -47,32 +50,14 @@ class DNANet(nn.Module):
                         inp_c = nb_filter[i]*(j)+nb_filter[0]*2**(i+1)*(2**(self.stage-1-i)-1) 
                 elif self.connect_type == 'dense':
                     inp_c = nb_filter[i]*(j)+nb_filter[0]*(2**(i)-1)+(nb_filter[0]*(int(2**(i-1)*7) if i<3 else 12)-nb_filter[i])*min(j, 1)
-                        
-                    
-                # self.channel_squeeze_list[i][j] = Mask_c(inp_c, inp_c)
-                # self.channel_squeeze_list[i][j] = ChannelRouter(inp_c, top_k=inp_c//2)
-                # self.channel_squeeze_list[i][j] = nn.Conv2d(inp_c, inp_c//2, 1)
-                # self.channel_squeeze_list[i][j] = GroupedChannelSelection(inp_c, inp_c//2, 1)
-                # self.channel_squeeze_list[i][j] = ChannelAttention(inp_c)
-                self.node_list[j][i] = nn.Sequential(
-                        # ConvBNReLU(inp_c, inp_c//2, 3),
-                        ConvBNReLU(inp_c, nb_filter[i], 3),
-                        # BasicRFB_a(inp_c, nb_filter[i]),
-                        MobileMambaBlock('s', nb_filter[i], 0.7, 0.2, 5, 0, ssm_ratio=2, layer=i),
-                        # MobileMambaBlock('b', nb_filter[i])
-                        )
-                # if i <2:
-                # self.node_list[j][i] = self._make_layer(block, inp_c, nb_filter[i], stride=1)
-                # elif i ==2:
-                #     self.node_list[j][i] = nn.Sequential(
-                #         ConvBNReLU(inp_c, nb_filter[i], 3),
-                #         MobileMambaBlock('s', nb_filter[i], 0.8, 0.2, 7, 0, ssm_ratio=2)
-                #         )
-                # elif i ==3:
-                #     self.node_list[j][i] = nn.Sequential(
-                #         ConvBNReLU(inp_c, nb_filter[i], 3),
-                #         MobileMambaBlock('s', nb_filter[i], 0.7, 0.2, 5, 0, ssm_ratio=2)
-                #         )
+
+                if self.moe_stages[i]:
+                    self.node_list[j][i] = nn.Sequential(
+                            ConvBNReLU(inp_c, nb_filter[i], 3),
+                            MobileMambaBlock('s', nb_filter[i], 0.7, 0.2, 5, 0, ssm_ratio=2, layer=i),
+                            )
+                else:
+                    self.node_list[j][i] = self._make_layer(block, inp_c, nb_filter[i], stride=1)
 
         # img_channels = 3      # ??3??
         # self.conv1 = nn.Sequential(

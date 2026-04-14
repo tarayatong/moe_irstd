@@ -67,7 +67,7 @@ class Trainer(object):
         # Choose and load model (this paper is finished by one GPU)
         if args.model   == 'DNANet':
             from model.model_mask_s_shape import DNANet
-            model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter)   # , batch_size=args.train_batch_size
+            model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter, moe_stages=args.moe_stages)   # , batch_size=args.train_batch_size
         elif args.model   == 's4decode':
             from model.model_decode import DNANet
             model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter)
