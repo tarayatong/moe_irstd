@@ -1,0 +1,42 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyTorch/模型相关
+*.pth
+*.pt
+*.ckpt
+*.weights
+*.onnx
+
+# 环境目录
+venv/
+env/
+.env
+
+# 编辑器配置
+.vscode/
+.idea/
+.DS_Store
+
+# 数据集和输出目录
+data/
+outputs/
+logs/
+checkpoints/
+
+*.png
+vis_result/
+result/
+result0/
+dataset
+logs/
+router_params/
+*.zip
+*.jpg
+*.txt
+*mamba*
+*triton*
+*csm*
+model/kernels
+draw_loss.py

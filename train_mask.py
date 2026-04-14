@@ -1,0 +1,259 @@
+# torch and visulization
+import time
+from tqdm             import tqdm
+import torch.optim    as optim
+from torch.optim      import lr_scheduler
+from torchvision      import transforms
+from torch.utils.data import DataLoader
+from model.parse_args_train import  parse_args
+
+# metric, loss .etc
+from model.utils import *
+from model.datasets import PointAnnoLoader, TestPointAnnoLoader
+from model.metric import *
+from model.loss import *
+from model.load_param_data import  load_dataset, load_param, load_dataset_5folders
+
+# model
+from model.model_DNANet import  Res_CBAM_block, ShuffleV2Block
+# from model.model_TriaNetv3_dilatedblock import ShuffleBlock
+# from model.model_DNANet_RFB import BasicRFB_a
+from model.model_DNANet import  DNANet
+# from model.model_UNet import UNet
+# from model.model_UNet_s2 import UNets2
+# from model.model_TriaNetv2_dilatedbranch import TriaNetv2
+# from model.model_TriaNetv3_dilatedblock import TriaNetv3
+# from model.model_TriaNet_RFBv3 import TriaNet_RFBv3
+from model.mobilenet_v2_dg_util import InvertedResidual
+from model.misc import *
+
+
+#random seed
+def init_seeds(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    # torch.backends.cudnn.deterministic = True
+    # torch.backends.cudnn.benchmark = False
+
+class Trainer(object):
+    def __init__(self, args):
+        # Initial
+        self.args = args
+        self.ROC  = ROCMetric(1, 10)
+        self.mIoU = mIoU(1)
+        self.PR = P_R_F1(1, 10, args.crop_size)
+        self.save_prefix = '_'.join([args.model, args.dataset])
+        self.save_dir    = args.save_dir
+        nb_filter, num_blocks = load_param(args.channel_size, args.backbone)
+        if args.deep_supervision=='True' :
+            deep_supervision = True 
+        elif args.deep_supervision=='False':
+            deep_supervision = False 
+        base_seed = 40
+        init_seeds(base_seed)
+
+        # Read image index from TXT
+        if args.mode == 'TXT':
+            dataset_dir = args.root + '/' + args.dataset
+            train_img_ids, val_img_ids, test_img_ids = load_dataset(args.root, args.dataset, args.split_method)
+        if args.mode == 'SIATD10seq':
+            dataset_dir = args.root + '/' + args.dataset
+            train_img_ids, val_img_ids, test_img_ids = load_dataset_5folders(args.root, args.dataset, args.split_method)
+
+        # Preprocess and load data
+        input_transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize([.485, .456, .406], [.229, .224, .225])])
+        trainset        = TrainSetLoader(dataset_dir,img_id=train_img_ids,base_size=args.base_size,crop_size=args.crop_size,transform=input_transform,suffix=args.suffix, dataset_name=args.dataset)
+        testset         = TestSetLoader (dataset_dir,img_id=test_img_ids,base_size=args.base_size, crop_size=args.crop_size, transform=input_transform,suffix=args.suffix, dataset_name=args.dataset)
+        # trainset        = PointAnnoLoader(dataset_dir,img_id=train_img_ids,base_size=args.base_size,crop_size=args.crop_size,transform=input_transform,suffix=args.suffix, dataset_name=args.dataset)
+        # testset         = TestPointAnnoLoader (dataset_dir,img_id=test_img_ids,base_size=args.base_size, crop_size=args.crop_size, transform=input_transform,suffix=args.suffix, dataset_name=args.dataset)
+        self.train_data = DataLoader(dataset=trainset, batch_size=args.train_batch_size, shuffle=True, num_workers=args.workers,drop_last=True)
+        self.test_data  = DataLoader(dataset=testset,  batch_size=args.test_batch_size, num_workers=args.workers,drop_last=False)
+        self.criterion = Loss()
+
+        # Choose and load model (this paper is finished by one GPU)
+        if args.model   == 'DNANet':
+            from model.model_DNANet_rand import DNANet
+            model       = DNANet(num_classes=1,input_channels=args.in_channels, block=InvertedResidual, num_blocks=num_blocks, nb_filter=nb_filter,in_size=(args.crop_size, args.crop_size), loss=self.criterion)
+        # elif args.model == 'UNet':
+        #     model       = UNet(num_classes=1,input_channels=args.in_channels, block=ShuffleV2Block, num_blocks=num_blocks, nb_filter=nb_filter, deep_supervision=deep_supervision)
+        # elif args.model == 'TriaNetv11':
+        #     from model.model_TriaNetv11 import TriaNet
+        #     model       = TriaNet(num_classes=1,input_channels=args.in_channels, block=ShuffleV2Block, num_blocks=num_blocks, nb_filter=nb_filter, deep_supervision=deep_supervision)
+        # elif args.model == 'TriaNetk4':
+        #     from model.model_TriaNet_k4 import TriaNet
+        #     model       = TriaNet(num_classes=1, input_channels=args.in_channels, block=ShuffleV2Block, num_blocks=num_blocks, nb_filter=nb_filter, deep_supervision=deep_supervision)
+        # elif args.model == 'TriaNet_RFBv10_a':
+        #     from model.model_TriaNet_RFBv10 import TriaNet_RFB
+        #     model       = TriaNet_RFB(num_classes=1,input_channels=args.in_channels, block=None, num_blocks=None, nb_filter=nb_filter, deep_supervision=deep_supervision)
+        # elif args.model == 'TriaNet_RFB_shuffle':
+        #     from model.model_TriaNet_RFB_shuffle import TriaNet_RFB
+        #     model       = TriaNet_RFB(num_classes=1,input_channels=args.in_channels, block=None, num_blocks=None, nb_filter=nb_filter, deep_supervision=deep_supervision)
+        # elif args.model == 'TriaNet_RFBv3':
+        #     model       = TriaNet_RFBv3(num_classes=1,input_channels=args.in_channels, block=None, num_blocks=None, nb_filter=nb_filter, deep_supervision=deep_supervision)        
+        # elif args.model == 'UNets2':
+        #     model       = UNets2(num_classes=1,input_channels=args.in_channels, block=ShuffleV2Block, num_blocks=num_blocks, nb_filter=nb_filter, deep_supervision=deep_supervision)
+        # elif args.model == 'TriaNetv2':
+        #     model       = TriaNetv2(num_classes=1,input_channels=args.in_channels, block=ShuffleV2Block, num_blocks=num_blocks, nb_filter=nb_filter, deep_supervision=False)
+        # elif args.model == 'TriaNetv3':
+        #     model       = TriaNetv3(num_classes=1,input_channels=args.in_channels, block=ShuffleBlock, num_blocks=num_blocks, nb_filter=nb_filter, deep_supervision=False)
+        # elif args.model == 'DNA_RFB':
+        #     model       = DNANet(num_classes=1,input_channels=args.in_channels, block=BasicRFB_a, num_blocks=[1,1,1,1], nb_filter=nb_filter, deep_supervision=True)
+        input = (torch.randn(2, 3, 256, 256), torch.randn(2, 3, 256, 256), 0.5, 5, 1, 0.1)
+
+        self.model_info(model, input)
+        model           = model.cuda()
+        # input = torch.randn(args.train_batch_size, 3, args.base_size, args.base_size).cuda()
+        model.apply(weights_init_xavier)
+        print("Model Initializing")
+        self.model      = model
+
+        # Optimizer and lr scheduling
+        if args.optimizer   == 'Adam':
+            self.optimizer  = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
+        elif args.optimizer == 'Adagrad':
+            self.optimizer  = torch.optim.Adagrad(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
+        elif args.optimzer == 'SGD':
+            self.optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate,weight_decay=args.weight_decay,
+                                momentum=args.momentum, nesterov=True)
+        self.p_anneal = ExpAnnealing(0, 1, 0, alpha=args.alpha)
+        if args.scheduler   == 'CosineAnnealingLR':
+            self.scheduler  = lr_scheduler.CosineAnnealingLR( self.optimizer, T_max=args.epochs, eta_min=args.min_lr)
+        self.scheduler.step()
+
+        # Evaluation metrics
+        self.best_iou       = 0
+        self.best_f1       = 0
+        self.best_recall    = [0,0,0,0,0,0,0,0,0,0,0]
+        self.best_precision = [0,0,0,0,0,0,0,0,0,0,0]
+
+
+    # def paramflop(self, model, input):
+    #     import torch.utils.benchmark as benchmark
+
+    #     # model = models.resnet50(pretrained=True).cuda()
+    #     input = torch.randn(4, 3, 512, 512).cuda()
+    #     flops, params = benchmark.utils.model_stats(model, input)
+
+    #     print(f'FLOPs: {flops / 1e9:.2f}G')
+    #     print(f'Params: {params / 1e6:.2f}M')
+
+    def model_info(self, model, input):
+        # Model information. img_size may be int or list, i.e. img_size=640 or img_size=[640, 320]
+        n_p = sum(x.numel() for x in model.parameters())  # number parameters
+        n_g = sum(x.numel() for x in model.parameters() if x.requires_grad)  # number gradients
+        from thop import profile
+        flops, params = profile(model, inputs=input)
+        fs = f', {flops / 1E9} GFLOPs'  # 640x640 GFLOPs
+        # print('thop| gflops:%.2fG  params:%.2fM'%(flops/ 1E9, params/ 1e6))
+        print(f"model info| summary: {len(list(model.modules()))} layers, {n_p /1E6}M parameters, {n_g /1E6}M gradients{fs}")
+
+    # Training
+    def training(self,epoch):   # 数据 模型 损失   
+        tbar = tqdm(self.train_data)    # 终端显示进度条 tqdm参数是dataloader
+        self.model.train()  # 初始化定义模型为DNANet，放在cuda上
+        losses = AverageMeter()     # 损失类 初始为0
+        p = self.p_anneal.get_lr(epoch)
+
+        # 使用torch.cuda.profiler.profile函数包装训练代码
+        for i, (data, labels) in enumerate(tbar):  # dataset getitem的返回形式
+            data   = data.cuda()    # 放到cuda normed
+            labels = labels.cuda()  # torch.Size([16, 1, 256, 256]) max1
+            batch_size = data.shape[0]
+            # import matplotlib.pyplot as plt
+            # fig, axe = plt.subplots(1,2)
+            # axe[0] = plt.imshow(data.cpu()[0,0,:,:])
+            # axe[1] = plt.imshow(labels.cpu()[0,0,:,:])
+            # plt.savefig('plot.png')
+            torch.cuda.synchronize()
+            start = time.time()
+
+            inputs = {"input": data, "label": labels, "den_target": self.args.den_target, "lbda": self.args.lbda,
+                    "gamma": self.args.gamma, "p": p}
+            outputs = self.model(**inputs) # 前向传播 得到包括中间层的多个结果
+            loss = outputs["closs"].mean() + outputs["rloss"].mean() + outputs["bloss"].mean()
+            losses.update(loss.item(), batch_size)
+
+            self.optimizer.zero_grad()  # 优化器初始化
+            loss.backward() # 损失回传
+            self.optimizer.step()   # 优化迭代
+            # losses.update(loss.item(), pred.size(0))    # AverageMeter这个类中写更新方法 损失项求均值
+              # 终端输出进度
+            torch.cuda.synchronize()
+            end = time.time()
+            infer_time = end-start
+            tbar.set_description('Epoch %d, training loss %.4f, FPS %.4f' % (epoch, losses.avg, args.train_batch_size/infer_time))
+        self.train_loss = losses.avg    # 最终损失是平均值
+
+
+    # Testing
+    def testing (self, epoch):
+        tbar = tqdm(self.test_data)
+        self.model.eval()
+        self.mIoU.reset()
+        self.PR.reset()
+        losses = AverageMeter()
+        all_infer_time = 0
+        p = self.p_anneal.get_lr(epoch)
+        with torch.no_grad():   # 梯度不更新
+            for i, ( data, labels) in enumerate(tbar):
+                batch_size = data.shape[0]
+                data = data.cuda()
+                labels = labels.cuda()
+                torch.cuda.synchronize()
+                start = time.time()
+                inputs = {"input": data, "label": labels, "den_target": self.args.den_target, "lbda": self.args.lbda,
+                        "gamma": self.args.gamma, "p": p}
+                outputs = self.model(**inputs) 
+                loss = outputs["closs"].mean() + outputs["rloss"].mean() + outputs["bloss"].mean()
+                # closses.update(outputs["closs"].mean().item(), batch_size)
+                # rlosses.update(outputs["rloss"].mean().item(), batch_size)
+                # blosses.update(outputs["bloss"].mean().item(), batch_size)
+                losses.update(loss.item(), batch_size)
+                torch.cuda.synchronize()
+                end = time.time()
+                infer_time = end-start
+                all_infer_time += infer_time
+                losses.update(loss.item(), outputs['out'].size(0))
+                # miou & ROC
+                self.ROC .update(outputs['out'], labels)  # 根据结果计算ROC曲线
+                self.mIoU.update(outputs['out'], labels)  # 计算mIoU
+                ture_positive_rate, false_positive_rate, recall, precision = self.ROC.get()
+                _, mean_IOU, _ = self.mIoU.get()   
+                tbar.set_description('Epoch %d, test loss %.4f, mean_IoU: %.4f' % (epoch, losses.avg, mean_IOU ))
+                # P R F1
+                # self.PR .update(pred, labels)
+                # P, R, F1 = self.PR.get()
+                # tbar.set_description('Epoch %d, test loss %.4f, F1: %.4f, P: %.4f, R: %.4f' % (epoch, losses.avg, F1.max(), P[F1.argmax()], R[F1.argmax()] )) 
+            test_loss=losses.avg
+            print('FPS: %.2f' % (len(self.test_data)*args.test_batch_size/all_infer_time))
+        # save high-performance model
+        save_model(mean_IOU, self.best_iou, self.save_dir, self.save_prefix,
+                   self.train_loss, test_loss, recall, precision, epoch, self.model.state_dict())
+        if mean_IOU > self.best_iou:
+            self.best_iou = mean_IOU 
+
+        # save_model_F1(F1, self.best_f1, self.save_dir, self.save_prefix,
+        #            self.train_loss, test_loss, R, P, epoch, self.model.state_dict())
+        # if F1.max() > self.best_f1:
+        #     self.best_f1 = F1.max()
+
+def main(args):
+    # torch.cuda.manual_seed(1000)
+    trainer = Trainer(args)
+    for epoch in range(args.start_epoch, args.epochs):
+        trainer.training(epoch)
+        trainer.testing(epoch)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    main(args)
+
+
+
+
+
