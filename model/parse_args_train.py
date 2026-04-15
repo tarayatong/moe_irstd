@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument('--suffix', type=str, default='.png')
     parser.add_argument('--split_method', type=str, default='50_50',
                         help='50_50, 10000_100(for NUST-SIRST)')
-    parser.add_argument('--workers', type=int, default=16,
+    parser.add_argument('--workers', type=int, default=0,
                         metavar='N', help='dataloader threads')
     parser.add_argument('--in_channels', type=int, default=3,
                         help='in_channel=3 for pre-process')
@@ -73,6 +73,10 @@ def parse_args():
                     help='learning rate for alpha and beta in architect searching process')
     parser.add_argument('--arch_weight_decay', type=float, default=1e-3,
                         metavar='M', help='w-decay (default: 5e-4)')
+    parser.add_argument('--moe_stages', type=str, default='1,1,1,1',
+                        help='which stages use MoE, e.g. 1,1,1,1 for all, 0,0,1,1 for low-res only')
+    parser.add_argument('--dilations', type=str, default='1,2,2,3',
+                        help='dilation rates for BasicRFB_a branches, e.g. 1,2,2,3')
 
     args = parser.parse_args()
     args.base_size = 256
@@ -84,6 +88,8 @@ def parse_args():
     args.backbone = 'resnet_18'
     args.train_batch_size = 8
     args.test_batch_size = 8
+    args.moe_stages = None
+    args.dilations = '1,1,1,1'
     # # args.lr = 0.02
 
     # args.base_size = 512
@@ -98,6 +104,8 @@ def parse_args():
 
     args.mode = 'TXT'
     args.loss = 'spar_iou_loss'
+    args.moe_stages = [bool(int(x)) for x in args.moe_stages.split(',')] if args.moe_stages else None
+    args.dilations = [int(x) for x in args.dilations.split(',')]
     # make dir for save result
     args.save_dir = make_dir(args.deep_supervision, args.dataset, args.model)
     # save training log

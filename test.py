@@ -30,6 +30,10 @@ class Trainer(object):
         args.backbone = 'resnet_18'
         args.test_batch_size = 1
         args.mode = 'TXT'
+        args.moe_stages = '1,1,1,1'
+        args.dilations = '1,2,2,3'
+        args.moe_stages = [bool(int(x)) for x in args.moe_stages.split(',')]
+        args.dilations = [int(x) for x in args.dilations.split(',')]
 
         # Initial
         self.args  = args
@@ -63,7 +67,7 @@ class Trainer(object):
 
         # Choose and load model (this paper is finished by one GPU)
 
-        model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter)
+        model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter, moe_stages=args.moe_stages, dilations=args.dilations)
 
         model           = model.cuda()
         model.apply(weights_init_xavier)

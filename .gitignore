@@ -26,7 +26,7 @@ logs/
 checkpoints/
 
 *.png
-vis_result/
+vis_result*
 result/
 result0/
 dataset
@@ -40,3 +40,5 @@ router_params/
 *csm*
 model/kernels
 draw_loss.py
+selective_scan
+model_parallel.py
