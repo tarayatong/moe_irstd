@@ -28,7 +28,8 @@ from model.mobilenet_v2_dg_util import InvertedResidual
 from model.misc import *
 import logging
 from model.mask import SpatialSparseMoE
-
+torch.cuda.empty_cache()
+torch.backends.cudnn.enabled = False
 # wandb.init(project='my-awsome-project')
 # config = wandb.config
 #random seed

@@ -87,7 +87,7 @@ def parse_args():
     args.backbone = 'resnet_18'
     args.train_batch_size = 8
     args.test_batch_size = 8
-    args.moe_stages = '0,0,1,1'
+    args.moe_stages = [1,1,1,1]
     # # args.lr = 0.02
 
     # args.base_size = 512

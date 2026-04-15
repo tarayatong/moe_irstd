@@ -22,14 +22,15 @@ class Trainer(object):
     def __init__(self, args):
         args.base_size = 256
         args.crop_size = 256
-        args.st_model = 'NUAA-SIRST_DNANet_14_04_2026_11_55_28_wDS'
-        args.model_dir = 'NUAA-SIRST_DNANet_14_04_2026_11_55_28_wDS/mIoU__DNANet_NUAA-SIRST_epoch.pth.tar'
+        args.st_model = 'NUAA-SIRST_DNANet_14_04_2026_12_06_42_wDS'
+        args.model_dir = 'NUAA-SIRST_DNANet_14_04_2026_12_06_42_wDS/mIoU__DNANet_NUAA-SIRST_epoch.pth.tar'
         args.model = 'DNANet'
         args.dataset = 'NUAA-SIRST'
         args.split_method = '50_50'
         args.backbone = 'resnet_18'
         args.test_batch_size = 1
         args.mode = 'TXT'
+        args.moe_stages = [0,0,1,1]
 
         # Initial
         self.args  = args
@@ -77,7 +78,7 @@ class Trainer(object):
 
         # Load trained model
         checkpoint        = torch.load(result_dir + args.model_dir)
-        self.model.load_state_dict(checkpoint['state_dict'], strict=False)
+        self.model.load_state_dict(checkpoint['state_dict'], strict=True)
 
         # Test
         self.model.eval()
