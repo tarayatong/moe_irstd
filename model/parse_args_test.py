@@ -61,8 +61,14 @@ def parse_args():
                         help="Label Type. Choose From 'binary' or 'gaussian'.")
     parser.add_argument('--block', type=str, default='Res_CBAM',
                         help='Res_CBAM or Shuffle')
+    parser.add_argument('--moe_stages', type=str, default='1,1,1,1',
+                        help='which stages use MoE, e.g. 1,1,1,1 for all, 0,0,1,1 for low-res only')
+    parser.add_argument('--dilations', type=str, default='1,2,2,3',
+                        help='dilation rates for BasicRFB_a branches, e.g. 1,2,2,3')
 
     args = parser.parse_args()
+    args.moe_stages = [bool(int(x)) for x in args.moe_stages.split(',')]
+    args.dilations = [int(x) for x in args.dilations.split(',')]
 
     # the parser
     return args

@@ -373,31 +373,34 @@ class BasicSepConv(nn.Module):
 
 class BasicRFB_a(nn.Module):
 
-    def __init__(self, in_planes, out_planes, stride=1, scale = 1.0):
+    def __init__(self, in_planes, out_planes, stride=1, scale=1.0, dilations=None):
         super(BasicRFB_a, self).__init__()
+        if dilations is None:
+            dilations = [1, 2, 2, 3]
+        d0, d1, d2, d3 = dilations
         self.scale = scale
         self.out_channels = out_planes
         inter_planes = in_planes //4 if in_planes>=4 else 1
 
         self.branch0 = nn.Sequential(
                 BasicConv(in_planes, inter_planes, kernel_size=1, stride=1),
-                BasicSepConv(inter_planes, kernel_size=3, stride=1, padding=1, dilation=1, relu=False)
+                BasicSepConv(inter_planes, kernel_size=3, stride=1, padding=d0, dilation=d0, relu=False)
                 )
         self.branch1 = nn.Sequential(
                 BasicConv(in_planes, inter_planes, kernel_size=1, stride=1),
                 BasicConv(inter_planes, inter_planes, kernel_size=(3,1), stride=1, padding=(1,0)),
-                BasicSepConv(inter_planes, kernel_size=3, stride=1, padding=2, dilation=2, relu=False)
+                BasicSepConv(inter_planes, kernel_size=3, stride=1, padding=d1, dilation=d1, relu=False)
                 )
         self.branch2 = nn.Sequential(
                 BasicConv(in_planes, inter_planes, kernel_size=1, stride=1),
                 BasicConv(inter_planes, inter_planes, kernel_size=(1,3), stride=stride, padding=(0,1)),
-                BasicSepConv(inter_planes, kernel_size=3, stride=1, padding=2, dilation=2, relu=False)
+                BasicSepConv(inter_planes, kernel_size=3, stride=1, padding=d2, dilation=d2, relu=False)
                 )
         self.branch3 = nn.Sequential(
                 BasicConv(in_planes, (inter_planes//2 if inter_planes>=2 else 1), kernel_size=1, stride=1),
                 BasicConv((inter_planes//2 if inter_planes>=2 else 1), (inter_planes//4 if inter_planes>=4 else 1)*3, kernel_size=(1,3), stride=1, padding=(0,1)),
                 BasicConv((inter_planes//4 if inter_planes>=4 else 1)*3, inter_planes, kernel_size=(3,1), stride=stride, padding=(1,0)),
-                BasicSepConv(inter_planes, kernel_size=3, stride=1, padding=3, dilation=3, relu=False)
+                BasicSepConv(inter_planes, kernel_size=3, stride=1, padding=d3, dilation=d3, relu=False)
                 )
 
         self.ConvLinear = BasicConv(4*inter_planes, out_planes, kernel_size=1, stride=1, relu=False)
@@ -429,7 +432,7 @@ class BasicRFB_a(nn.Module):
     
 class MobileMambaModule(torch.nn.Module):
     def __init__(self, dim, global_ratio=0.25, local_ratio=0.25,
-                 kernels=3, global_type='wt_low_high', layer=2):
+                 kernels=3, global_type='wt_low_high', layer=2, dilations=None):
         super().__init__()
         self.dim = dim
         self.multi = False
@@ -452,7 +455,7 @@ class MobileMambaModule(torch.nn.Module):
             # self.local_op3 = DWConv2d_BN_ReLU(self.local_channels, self.local_channels, kernel_size=7)
         elif self.local_channels != 0:
             # self.local_op = DWConv2d_BN_ReLU(self.local_channels, self.local_channels, kernels)
-            self.local_op = BasicRFB_a(self.local_channels, self.local_channels)
+            self.local_op = BasicRFB_a(self.local_channels, self.local_channels, dilations=dilations)
         else:
             self.local_op = nn.Identity()
 
@@ -511,11 +514,11 @@ class MobileMambaModule(torch.nn.Module):
 
 class MobileMambaBlockWindow(torch.nn.Module):
     def __init__(self, dim, global_ratio=0.25, local_ratio=0.25,
-                 kernels=5, ssm_ratio=1, forward_type="v052d",layer=2):
+                 kernels=5, ssm_ratio=1, forward_type="v052d", layer=2, dilations=None):
         super().__init__()
         self.dim = dim
         self.attn = MobileMambaModule(dim, global_ratio=global_ratio, local_ratio=local_ratio,
-                                           kernels=kernels, global_type='wt_low_high', layer=layer)
+                                           kernels=kernels, global_type='wt_low_high', layer=layer, dilations=dilations)
 
     def forward(self, x):
         x = self.attn(x)
@@ -525,7 +528,7 @@ class MobileMambaBlockWindow(torch.nn.Module):
 class MobileMambaBlock(torch.nn.Module):
     def __init__(self, type,
                  ed, global_ratio=0.25, local_ratio=0.25,
-                 kernels=5,  drop_path=0., has_skip=True, ssm_ratio=1, forward_type="v052d", layer=2):
+                 kernels=5,  drop_path=0., has_skip=True, ssm_ratio=1, forward_type="v052d", layer=2, dilations=None):
         super().__init__()
 
         self.dw0 = Residual(Conv2d_BN(ed, ed, 3, 1, 1, groups=ed, bn_weight_init=0.))
@@ -533,7 +536,7 @@ class MobileMambaBlock(torch.nn.Module):
 
         if type == 's':
             self.mixer = Residual(MobileMambaBlockWindow(ed, global_ratio=global_ratio, local_ratio=local_ratio,
-                                                       kernels=kernels, ssm_ratio=ssm_ratio,forward_type=forward_type, layer=layer))
+                                                       kernels=kernels, ssm_ratio=ssm_ratio,forward_type=forward_type, layer=layer, dilations=dilations))
 
         self.dw1 = Residual(Conv2d_BN(ed, ed, 3, 1, 1, groups=ed, bn_weight_init=0.,))
         self.ffn1 = Residual(FFN(ed, int(ed * 2)))
