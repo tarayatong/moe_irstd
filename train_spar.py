@@ -150,31 +150,40 @@ class Trainer(object):
             tbar.set_description('Epoch %d, training loss %.4f, iou loss: %.4f, FPS %.4f' % (epoch, losses.avg, loss.mean(), args.train_batch_size/infer_time))
         self.train_loss = losses.avg    # 最终损失是平均值
 
-    def save_router_params(self, model, epoch, save_dir='./router_params'):
+    def _set_routing_record(self, model, enable):
+        for m in model.modules():
+            if isinstance(m, SpatialSparseMoE):
+                m.record_routing = enable
+
+    def _collect_routing_stats(self, model):
+        stats = []
+        for name, m in model.named_modules():
+            if isinstance(m, SpatialSparseMoE) and m.last_routing_stats is not None:
+                stats.append({'name': name, **m.last_routing_stats})
+                m.last_routing_stats = None
+        return stats
+
+    def save_routing_snapshot(self, epoch, save_dir='./routing_logs'):
         import os
-        import numpy as np
-        from model.mobile_mamba import MobileMambaBlock
-        
-        # 创建保存目录
         os.makedirs(save_dir, exist_ok=True)
-        save_path = os.path.join(save_dir, f'router_epoch_{epoch}.txt')
-        with open(save_path, 'w') as f:
-            # 获取router参数
-            for i in range(len(model.node_list)):
-                for j in range(len(model.node_list[i])):
-                    for k, module in enumerate(model.node_list[i][j]):
-                        if isinstance(module, MobileMambaBlock):
-                            router_params = module.mixer.m.attn.spacial_moe.router.detach().cpu().numpy()
-                            # 获取参数形状
-                            param_shape = router_params.shape
-                            # 写入模块信息和参数形状
-                            f.write(f"Node {i}, Block {j}, Module {k} - Shape: {param_shape}\n")
-                            # 写入参数值，格式化为矩阵形式
-                            for row in router_params:
-                                param_str = ' '.join(f"{val:.4f}" for val in row)
-                                f.write(f"  {param_str}\n")
-                            # 添加空行分隔不同
-                            f.write("\n")
+
+        self._set_routing_record(self.model, True)
+        self.model.eval()
+        with torch.no_grad():
+            data, labels = next(iter(self.test_data))
+            data = data.cuda()
+            self.model(data)
+        self._set_routing_record(self.model, False)
+        self.model.train()
+
+        all_stats = self._collect_routing_stats(self.model)
+        snapshot = {
+            'epoch': epoch,
+            'input': data.cpu(),
+            'labels': labels.cpu(),
+            'modules': all_stats,
+        }
+        torch.save(snapshot, os.path.join(save_dir, f'routing_epoch_{epoch}.pt'))
 
     # Testing
     def testing (self, epoch):
@@ -222,16 +231,16 @@ class Trainer(object):
         #     self.best_f1 = F1.max()
 
 def main(args):
-    # torch.cuda.manual_seed(1000)
     trainer = Trainer(args)
+    routing_log_dir = os.path.join(args.save_dir, f'routing_alpha_{args.noise_scale}')
+    routing_epochs = {0, 1, 5, 10, 50, 100, 200, 300, 500, 700, 999}
     for epoch in range(args.start_epoch, args.epochs):
         trainer.training(epoch)
         trainer.testing(epoch)
+        if epoch in routing_epochs:
+            trainer.save_routing_snapshot(epoch, save_dir=routing_log_dir)
     input = torch.randn(1, 3, 256, 256).cuda()
     trainer.model_info(trainer.model, input)
-    
-        # if epoch in [0,1,5,10,50,100,200,300,400,499]:
-        #     trainer.save_router_params(trainer.model, epoch)
 
 
 if __name__ == "__main__":

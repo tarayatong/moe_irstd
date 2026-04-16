@@ -345,15 +345,15 @@ class SpatialSparseMoE(nn.Module):
         self.router = SpatialNoisyTopkRouter(n_embed, num_experts, top_k, noise_scale=noise_scale)
         self.experts = nn.ModuleList([Expert(n_embed, out_channels) for _ in range(num_experts)]) if experts is None else experts
         self.top_k = top_k
+        self.num_experts = num_experts
+        self.record_routing = False
+        self.last_routing_stats = None
 
     def forward(self, x):
         B, C, H, W = x.shape
-        # 1. 输入进入router得到两个输出
         gating_output, indices = self.router(x) # [b,num_experts, h,w] [b,topk, h,w]
-        # 2.初始化全零矩阵，后续叠加为最终结果
         final_output = torch.zeros_like(x)
 
-        # 3. 对每个专家进行处理
         for i, expert in enumerate(self.experts):
             expert_mask = (indices == i).any(dim=1) # [b,h,w]
             expert_mask = expert_mask.unsqueeze(1).expand_as(x) # [b,c,h,w]
@@ -365,6 +365,22 @@ class SpatialSparseMoE(nn.Module):
                 expert_weights = expert_weights.expand(-1, C, -1, -1)
                 weighted_output = expert_output * expert_weights
                 final_output = final_output + weighted_output
+
+        if self.record_routing:
+            with torch.no_grad():
+                prob = gating_output.detach()  # [B, num_experts, H, W]
+                # router entropy per spatial position, then averaged
+                entropy = -(prob * (prob + 1e-8).log()).sum(dim=1).mean()
+                # expert load: fraction of pixels assigned to each expert (via top-k indices)
+                load = torch.zeros(self.num_experts, device=x.device)
+                for ei in range(self.num_experts):
+                    load[ei] = (indices == ei).any(dim=1).float().mean()
+                self.last_routing_stats = {
+                    'entropy': entropy.item(),
+                    'load': load.cpu(),
+                    'indices': indices.cpu(),        # [B, topk, H, W]
+                    'gating': prob.cpu(),             # [B, num_experts, H, W]
+                }
 
         return final_output
 

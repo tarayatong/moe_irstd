@@ -92,6 +92,7 @@ def parse_args():
     args.test_batch_size = 8
     args.moe_stages = None
     args.dilations = '1,1,1,1'
+    args.noise_scale = 0.0
     # # args.lr = 0.02
 
     # args.base_size = 512
