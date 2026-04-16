@@ -12,7 +12,7 @@ from model.mobile_mamba import MobileMambaBlock
 logging.getLogger('thop').setLevel(logging.WARNING)
 
 class DNANet(nn.Module):
-    def __init__(self, num_classes, input_channels, block, num_blocks, nb_filter,stage=4, block_count=4, moe_stages=None, dilations=None):   # [16, 32, 64, 128, 256] [2,2,2,2]
+    def __init__(self, num_classes, input_channels, block, num_blocks, nb_filter,stage=4, block_count=4, moe_stages=None, dilations=None, noise_scale=0.2):   # [16, 32, 64, 128, 256] [2,2,2,2]
         super(DNANet, self).__init__()
         if moe_stages is None:
             moe_stages = [True] * stage
@@ -60,7 +60,7 @@ class DNANet(nn.Module):
                 if self.moe_stages[i]:
                     self.node_list[j][i] = nn.Sequential(
                             ConvBNReLU(inp_c, nb_filter[i], 3),
-                            MobileMambaBlock('s', nb_filter[i], 0.7, 0.2, 5, 0, ssm_ratio=2, layer=i, dilations=dilations),
+                            MobileMambaBlock('s', nb_filter[i], 0.7, 0.2, 5, 0, ssm_ratio=2, layer=i, dilations=dilations, noise_scale=noise_scale),
                             )
                 else:
                     self.node_list[j][i] = self._make_layer(block, inp_c, nb_filter[i], stride=1)

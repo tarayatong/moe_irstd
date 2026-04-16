@@ -77,6 +77,8 @@ def parse_args():
                         help='which stages use MoE, e.g. 1,1,1,1 for all, 0,0,1,1 for low-res only')
     parser.add_argument('--dilations', type=str, default='1,2,2,3',
                         help='dilation rates for BasicRFB_a branches, e.g. 1,2,2,3')
+    parser.add_argument('--noise_scale', type=float, default=0.2,
+                        help='noise scale factor alpha for SpatialNoisyTopkRouter')
 
     args = parser.parse_args()
     args.base_size = 256

@@ -301,10 +301,11 @@ class GroupedChannelSelection(nn.Module):
     
 
 class SpatialNoisyTopkRouter(nn.Module):
-    def __init__(self, in_channels, num_experts, top_k, expert_ratios=None):
+    def __init__(self, in_channels, num_experts, top_k, noise_scale=0.2):
         super().__init__()
         self.top_k = top_k
         self.num_experts = num_experts
+        self.noise_scale = noise_scale
         self.topkroute_conv = nn.Conv2d(in_channels, num_experts, kernel_size=1)
         self.noise_conv = nn.Conv2d(in_channels, num_experts, kernel_size=1)
 
@@ -313,7 +314,7 @@ class SpatialNoisyTopkRouter(nn.Module):
         logits = self.topkroute_conv(x) # [b,num_experts, h,w]
         noise_logits = self.noise_conv(x)
         noise = torch.randn_like(logits) * F.softplus(noise_logits)
-        noisy_logits = logits + noise * 0.2
+        noisy_logits = logits + noise * self.noise_scale
 
         # top-k选择
         top_k_logits, indices = noisy_logits.topk(self.top_k, dim=1)    # [b, topk, h, w]
@@ -339,9 +340,9 @@ class SpatialExpert(nn.Module):
 
 
 class SpatialSparseMoE(nn.Module):
-    def __init__(self, n_embed, num_experts, top_k, out_channels, experts=None):
+    def __init__(self, n_embed, num_experts, top_k, out_channels, experts=None, noise_scale=0.2):
         super(SpatialSparseMoE, self).__init__()
-        self.router = SpatialNoisyTopkRouter(n_embed, num_experts, top_k)
+        self.router = SpatialNoisyTopkRouter(n_embed, num_experts, top_k, noise_scale=noise_scale)
         self.experts = nn.ModuleList([Expert(n_embed, out_channels) for _ in range(num_experts)]) if experts is None else experts
         self.top_k = top_k
 

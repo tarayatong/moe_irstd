@@ -432,10 +432,10 @@ class BasicRFB_a(nn.Module):
     
 class MobileMambaModule(torch.nn.Module):
     def __init__(self, dim, global_ratio=0.25, local_ratio=0.25,
-                 kernels=3, global_type='wt_low_high', layer=2, dilations=None):
+                 kernels=3, global_type='wt_low_high', layer=2, dilations=None, noise_scale=0.2):
         super().__init__()
         self.dim = dim
-        self.multi = False
+        self.multi = True
         self.moe = True
         if not self.moe:
             self.global_channels = nearest_multiple_of_16(int(global_ratio * dim))
@@ -489,7 +489,7 @@ class MobileMambaModule(torch.nn.Module):
         if self.moe:
             if self.multi:
                 experts = nn.ModuleList(self.global_op + [self.local_op1, self.local_op2, nn.Identity()])
-                self.spacial_moe = SpatialSparseMoE(dim, len(experts), 2, dim, experts)
+                self.spacial_moe = SpatialSparseMoE(dim, len(experts), 2, dim, experts, noise_scale=noise_scale)
             else:
                 experts = nn.ModuleList(self.global_op + [self.local_op, nn.Identity()])
                 self.spacial_moe = ChannelRouter(dim, len(experts), -1, dim, experts)
@@ -514,11 +514,11 @@ class MobileMambaModule(torch.nn.Module):
 
 class MobileMambaBlockWindow(torch.nn.Module):
     def __init__(self, dim, global_ratio=0.25, local_ratio=0.25,
-                 kernels=5, ssm_ratio=1, forward_type="v052d", layer=2, dilations=None):
+                 kernels=5, ssm_ratio=1, forward_type="v052d", layer=2, dilations=None, noise_scale=0.2):
         super().__init__()
         self.dim = dim
         self.attn = MobileMambaModule(dim, global_ratio=global_ratio, local_ratio=local_ratio,
-                                           kernels=kernels, global_type='wt_low_high', layer=layer, dilations=dilations)
+                                           kernels=kernels, global_type='wt_low_high', layer=layer, dilations=dilations, noise_scale=noise_scale)
 
     def forward(self, x):
         x = self.attn(x)
@@ -528,7 +528,7 @@ class MobileMambaBlockWindow(torch.nn.Module):
 class MobileMambaBlock(torch.nn.Module):
     def __init__(self, type,
                  ed, global_ratio=0.25, local_ratio=0.25,
-                 kernels=5,  drop_path=0., has_skip=True, ssm_ratio=1, forward_type="v052d", layer=2, dilations=None):
+                 kernels=5,  drop_path=0., has_skip=True, ssm_ratio=1, forward_type="v052d", layer=2, dilations=None, noise_scale=0.2):
         super().__init__()
 
         self.dw0 = Residual(Conv2d_BN(ed, ed, 3, 1, 1, groups=ed, bn_weight_init=0.))
@@ -536,7 +536,7 @@ class MobileMambaBlock(torch.nn.Module):
 
         if type == 's':
             self.mixer = Residual(MobileMambaBlockWindow(ed, global_ratio=global_ratio, local_ratio=local_ratio,
-                                                       kernels=kernels, ssm_ratio=ssm_ratio,forward_type=forward_type, layer=layer, dilations=dilations))
+                                                       kernels=kernels, ssm_ratio=ssm_ratio,forward_type=forward_type, layer=layer, dilations=dilations, noise_scale=noise_scale))
 
         self.dw1 = Residual(Conv2d_BN(ed, ed, 3, 1, 1, groups=ed, bn_weight_init=0.,))
         self.ffn1 = Residual(FFN(ed, int(ed * 2)))
