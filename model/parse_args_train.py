@@ -88,10 +88,10 @@ def parse_args():
     args.split_method = '50_50'
     args.model = 'DNANet'
     args.backbone = 'resnet_18'
-    args.train_batch_size = 8
-    args.test_batch_size = 8
-    args.moe_stages = None
-    args.dilations = '1,1,1,1'
+    args.train_batch_size = 4
+    args.test_batch_size = 4
+    args.moe_stages = '1,1,1,1'
+    args.dilations = '1,2,2,3'
     args.noise_scale = 0.0
     # # args.lr = 0.02
 

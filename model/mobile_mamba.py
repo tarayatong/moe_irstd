@@ -435,7 +435,7 @@ class MobileMambaModule(torch.nn.Module):
                  kernels=3, global_type='wt_low_high', layer=2, dilations=None, noise_scale=0.2):
         super().__init__()
         self.dim = dim
-        self.multi = True
+        self.multi = False
         self.moe = True
         if not self.moe:
             self.global_channels = nearest_multiple_of_16(int(global_ratio * dim))
@@ -488,12 +488,13 @@ class MobileMambaModule(torch.nn.Module):
             )
         if self.moe:
             if self.multi:
-                experts = nn.ModuleList(self.global_op + [self.local_op1, self.local_op2, nn.Identity()])
+                experts = nn.ModuleList([self.global_op1, self.global_op2] + [self.local_op1, self.local_op2, nn.Identity()])
                 self.spacial_moe = SpatialSparseMoE(dim, len(experts), 2, dim, experts, noise_scale=noise_scale)
             else:
                 experts = nn.ModuleList(self.global_op + [self.local_op, nn.Identity()])
-                self.spacial_moe = ChannelRouter(dim, len(experts), -1, dim, experts)
-
+                # self.spacial_moe = ChannelRouter(dim, len(experts), -1, dim, experts)
+                self.spacial_moe = SpatialSparseMoE(dim, len(experts), 2, dim, experts, noise_scale=noise_scale)
+                
     def forward(self, x):  # x (B,C,H,W)
         if not self.moe:
             x1, x2, x3 = torch.split(x, [self.global_channels, self.local_channels, self.identity_channels], dim=1)

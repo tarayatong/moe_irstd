@@ -346,7 +346,7 @@ class SpatialSparseMoE(nn.Module):
         self.experts = nn.ModuleList([Expert(n_embed, out_channels) for _ in range(num_experts)]) if experts is None else experts
         self.top_k = top_k
         self.num_experts = num_experts
-        self.record_routing = False
+        self.record_routing = None  # None, 'full', or 'lite'
         self.last_routing_stats = None
 
     def forward(self, x):
@@ -368,19 +368,19 @@ class SpatialSparseMoE(nn.Module):
 
         if self.record_routing:
             with torch.no_grad():
-                prob = gating_output.detach()  # [B, num_experts, H, W]
-                # router entropy per spatial position, then averaged
+                prob = gating_output.detach()
                 entropy = -(prob * (prob + 1e-8).log()).sum(dim=1).mean()
-                # expert load: fraction of pixels assigned to each expert (via top-k indices)
                 load = torch.zeros(self.num_experts, device=x.device)
                 for ei in range(self.num_experts):
                     load[ei] = (indices == ei).any(dim=1).float().mean()
-                self.last_routing_stats = {
+                stats = {
                     'entropy': entropy.item(),
                     'load': load.cpu(),
-                    'indices': indices.cpu(),        # [B, topk, H, W]
-                    'gating': prob.cpu(),             # [B, num_experts, H, W]
                 }
+                if self.record_routing == 'full':
+                    stats['indices'] = indices.cpu()
+                    stats['gating'] = prob.cpu()
+                self.last_routing_stats = stats
 
         return final_output
 

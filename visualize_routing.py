@@ -140,6 +140,9 @@ def plot_heatmap(routing_dir, epoch, save_path=None):
         return
 
     snapshot = load_snapshot(snapshot_path)
+    if 'input' not in snapshot:
+        print(f"Snapshot is lite mode (no input/gating data). Use --mode dynamics or compare instead.")
+        return
     input_imgs = snapshot['input']       # [B, 3, H, W]
     labels = snapshot['labels']          # [B, 1, H, W]
     modules = snapshot['modules']
@@ -201,6 +204,10 @@ def plot_evolution(routing_dir, module_idx=0, save_path=None):
     snapshots = load_all_snapshots(routing_dir)
     if not snapshots:
         print(f"No snapshots found in {routing_dir}")
+        return
+
+    if 'gating' not in snapshots[0]['modules'][module_idx]:
+        print(f"Snapshots are lite mode (no gating data). Use --mode dynamics or compare instead.")
         return
 
     num_experts = snapshots[0]['modules'][module_idx]['gating'].shape[1]

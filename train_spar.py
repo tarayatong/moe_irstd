@@ -150,10 +150,10 @@ class Trainer(object):
             tbar.set_description('Epoch %d, training loss %.4f, iou loss: %.4f, FPS %.4f' % (epoch, losses.avg, loss.mean(), args.train_batch_size/infer_time))
         self.train_loss = losses.avg    # 最终损失是平均值
 
-    def _set_routing_record(self, model, enable):
+    def _set_routing_record(self, model, mode):
         for m in model.modules():
             if isinstance(m, SpatialSparseMoE):
-                m.record_routing = enable
+                m.record_routing = mode
 
     def _collect_routing_stats(self, model):
         stats = []
@@ -163,26 +163,27 @@ class Trainer(object):
                 m.last_routing_stats = None
         return stats
 
-    def save_routing_snapshot(self, epoch, save_dir='./routing_logs'):
+    def save_routing_snapshot(self, epoch, save_dir='./routing_logs', mode='full'):
         import os
         os.makedirs(save_dir, exist_ok=True)
 
-        self._set_routing_record(self.model, True)
+        self._set_routing_record(self.model, mode)
         self.model.eval()
         with torch.no_grad():
             data, labels = next(iter(self.test_data))
             data = data.cuda()
             self.model(data)
-        self._set_routing_record(self.model, False)
+        self._set_routing_record(self.model, None)
         self.model.train()
 
         all_stats = self._collect_routing_stats(self.model)
         snapshot = {
             'epoch': epoch,
-            'input': data.cpu(),
-            'labels': labels.cpu(),
             'modules': all_stats,
         }
+        if mode == 'full':
+            snapshot['input'] = data.cpu()
+            snapshot['labels'] = labels.cpu()
         torch.save(snapshot, os.path.join(save_dir, f'routing_epoch_{epoch}.pt'))
 
     # Testing
@@ -234,11 +235,13 @@ def main(args):
     trainer = Trainer(args)
     routing_log_dir = os.path.join(args.save_dir, f'routing_alpha_{args.noise_scale}')
     routing_epochs = {0, 1, 5, 10, 50, 100, 200, 300, 500, 700, 999}
+    # α=0.2 保存完整数据（可画热力图），其他只保存统计量（entropy+load）
+    routing_mode = 'full' if args.noise_scale == 0.2 else 'lite'
     for epoch in range(args.start_epoch, args.epochs):
         trainer.training(epoch)
         trainer.testing(epoch)
         if epoch in routing_epochs:
-            trainer.save_routing_snapshot(epoch, save_dir=routing_log_dir)
+            trainer.save_routing_snapshot(epoch, save_dir=routing_log_dir, mode=routing_mode)
     input = torch.randn(1, 3, 256, 256).cuda()
     trainer.model_info(trainer.model, input)
 

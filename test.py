@@ -22,8 +22,8 @@ class Trainer(object):
     def __init__(self, args):
         args.base_size = 256
         args.crop_size = 256
-        args.st_model = 'NUAA-SIRST_DNANet_28_05_2025_15_46_52_wDS'
-        args.model_dir = 'NUAA-SIRST_DNANet_28_05_2025_15_46_52_wDS/mIoU__DNANet_NUAA-SIRST_epoch.pth.tar'
+        args.st_model = 'NUAA-SIRST_DNANet_16_04_2026_19_04_02_wDS'
+        args.model_dir = 'NUAA-SIRST_DNANet_16_04_2026_19_04_02_wDS/mIoU__DNANet_NUAA-SIRST_epoch.pth.tar'
         args.model = 'DNANet'
         args.dataset = 'NUAA-SIRST'
         args.split_method = '50_50'
@@ -32,6 +32,7 @@ class Trainer(object):
         args.mode = 'TXT'
         args.moe_stages = '1,1,1,1'
         args.dilations = '1,2,2,3'
+        args.noise_scale = 0.0
         args.moe_stages = [bool(int(x)) for x in args.moe_stages.split(',')]
         args.dilations = [int(x) for x in args.dilations.split(',')]
 
