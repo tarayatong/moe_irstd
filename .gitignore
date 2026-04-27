@@ -42,3 +42,5 @@ model/kernels
 draw_loss.py
 selective_scan
 model_parallel.py
+router/
+NUAA-SIRST_DNANet_*

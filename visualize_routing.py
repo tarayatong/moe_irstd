@@ -8,7 +8,16 @@ Usage:
     # 2. Compare routing dynamics across multiple alpha values
     python visualize_routing.py --mode compare --routing_dirs result/routing_alpha_0.0 result/routing_alpha_0.1 result/routing_alpha_0.2 result/routing_alpha_0.5
 
-    # 3. Visualize per-pixel expert assignment on test images
+    # 2b. Same as (2), but each item is an experiment root that contains exactly one routing_alpha_* folder
+    python visualize_routing.py --mode compare --run_roots NUAA-SIRST_DNANet_... NUAA-SIRST_DNANet_...
+
+    # 3. Expert selection fraction vs epoch for one run (e.g. α=0.1)
+    python visualize_routing.py --mode expert_loads --routing_dir result/routing_alpha_0.1
+
+    # 3b. Same curves for every α (subplot grid), via experiment roots or explicit routing dirs
+    python visualize_routing.py --mode expert_loads_grid --run_roots NUAA-SIRST_DNANet_...
+
+    # 4. Visualize per-pixel expert assignment on test images
     python visualize_routing.py --mode heatmap --routing_dir result/routing_alpha_0.2 --epoch 999
 """
 
@@ -35,6 +44,44 @@ def load_all_snapshots(routing_dir):
     return snapshots
 
 
+def routing_alpha_from_path(routing_dir):
+    """Parse α from .../routing_alpha_<float>."""
+    base = os.path.basename(routing_dir.rstrip('/'))
+    if not base.startswith('routing_alpha_'):
+        return None
+    return float(base.split('_')[-1])
+
+
+def discover_routing_dirs_from_run_roots(run_roots):
+    """
+    Each run root is expected to contain one routing_alpha_* directory (typical layout per ablation run).
+    Returns sorted list of absolute routing log paths (by α ascending).
+    """
+    discovered = []
+    for root in run_roots:
+        root = os.path.abspath(os.path.expanduser(root))
+        matches = sorted(glob.glob(os.path.join(root, 'routing_alpha_*')))
+        if len(matches) == 1:
+            discovered.append(matches[0])
+        elif len(matches) == 0:
+            if os.path.isdir(root) and os.path.basename(root).startswith('routing_alpha_'):
+                discovered.append(root)
+            else:
+                print(f"Warning: no routing_alpha_* under {root}")
+        else:
+            print(f"Warning: multiple routing_alpha_* under {root}, using all ({len(matches)})")
+            discovered.extend(matches)
+    discovered = sorted(set(discovered), key=lambda p: routing_alpha_from_path(p) or 0.0)
+    return discovered
+
+
+def expert_display_names(num_experts):
+    """Expert index → display name (0 高频, 1 低频, 2 local, 3 identity)."""
+    known = ['高频专家', '低频专家', 'local专家', 'identity']
+    names = [known[i] if i < len(known) else f'Expert {i}' for i in range(num_experts)]
+    return names
+
+
 # ========== Figure 1: Routing Dynamics (entropy + load balance over epochs) ==========
 
 def plot_dynamics(routing_dir, save_path=None):
@@ -59,7 +106,7 @@ def plot_dynamics(routing_dir, save_path=None):
     axes[0].grid(True, alpha=0.3)
 
     num_experts = len(snapshots[0]['modules'][0]['load'])
-    expert_names = [f'Expert {i}' for i in range(num_experts)]
+    expert_names = expert_display_names(num_experts)
     for ei in range(num_experts):
         loads = []
         for s in snapshots:
@@ -81,15 +128,147 @@ def plot_dynamics(routing_dir, save_path=None):
         plt.show()
 
 
+# ========== Expert load only (one α): four experts’ pixel fraction vs epoch ==========
+
+def expert_load_curves_from_snapshots(snapshots):
+    """
+    Returns (epochs, load_matrix) where load_matrix has shape (n_epochs, n_experts);
+    each value is mean over MoE modules of that expert's pixel fraction (same as plot_dynamics).
+    """
+    epochs = [s['epoch'] for s in snapshots]
+    num_modules = len(snapshots[0]['modules'])
+    num_experts = len(snapshots[0]['modules'][0]['load'])
+    load_matrix = np.zeros((len(snapshots), num_experts), dtype=np.float64)
+    for si, s in enumerate(snapshots):
+        for ei in range(num_experts):
+            load_matrix[si, ei] = np.mean([s['modules'][mi]['load'][ei].item() for mi in range(num_modules)])
+    return epochs, load_matrix
+
+
+def plot_expert_loads(routing_dir, save_path=None):
+    """
+    For each expert k, plot mean over MoE modules of load[k] (fraction of routed pixels),
+    same aggregation as the lower panel of plot_dynamics.
+    """
+    snapshots = load_all_snapshots(routing_dir)
+    if not snapshots:
+        print(f"No snapshots found in {routing_dir}")
+        return
+
+    alpha = routing_alpha_from_path(routing_dir)
+    alpha_tag = f'{alpha:g}' if alpha is not None else routing_dir.rstrip('/').split('_')[-1]
+
+    epochs, load_matrix = expert_load_curves_from_snapshots(snapshots)
+    num_experts = load_matrix.shape[1]
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+    expert_names = expert_display_names(num_experts)
+    for ei in range(num_experts):
+        ax.plot(epochs, load_matrix[:, ei], marker='s', markersize=4, linewidth=1.8, label=expert_names[ei])
+
+    ax.set_xlabel('Epoch')
+    ax.set_ylabel('Expert load (pixel fraction, mean over MoE layers)')
+    ax.set_title(f'Expert selection vs epoch (α={alpha_tag})')
+    ax.legend(fontsize=9, loc='best')
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=200, bbox_inches='tight')
+        print(f"Saved to {save_path}")
+    else:
+        plt.show()
+
+
+def plot_expert_loads_grid(routing_dirs, save_path=None, ncols=4):
+    """One subplot per α: four expert load curves vs epoch (sorted by α)."""
+    def _sort_key(d):
+        a = routing_alpha_from_path(d)
+        return (a is not None, a if a is not None else 0.0, d)
+
+    routing_dirs = sorted(routing_dirs, key=_sort_key)
+    n = len(routing_dirs)
+    if n == 0:
+        print('No routing directories to plot')
+        return
+
+    ncols = max(1, min(ncols, n))
+    nrows = (n + ncols - 1) // ncols
+    fig, axes = plt.subplots(nrows, ncols, figsize=(3.8 * ncols, 3.2 * nrows), sharex=False, sharey=True)
+    if nrows * ncols == 1:
+        axes = np.array([[axes]])
+    elif nrows == 1:
+        axes = np.atleast_2d(axes)
+    elif ncols == 1:
+        axes = axes.reshape(-1, 1)
+
+    first_ax_for_legend = None
+    for idx, routing_dir in enumerate(routing_dirs):
+        r, c = divmod(idx, ncols)
+        ax = axes[r, c]
+        alpha = routing_alpha_from_path(routing_dir)
+        alpha_tag = f'{alpha:g}' if alpha is not None else routing_dir.rstrip('/').split('_')[-1]
+
+        snapshots = load_all_snapshots(routing_dir)
+        if not snapshots:
+            ax.set_visible(False)
+            print(f"Warning: no snapshots in {routing_dir}, skipped")
+            continue
+
+        epochs, load_matrix = expert_load_curves_from_snapshots(snapshots)
+        num_experts = load_matrix.shape[1]
+        expert_names = expert_display_names(num_experts)
+
+        for ei in range(num_experts):
+            ax.plot(epochs, load_matrix[:, ei], marker='s', markersize=2, linewidth=1.4,
+                    label=expert_names[ei])
+        if first_ax_for_legend is None:
+            first_ax_for_legend = ax
+        ax.set_title(f'α={alpha_tag}', fontsize=11)
+        ax.grid(True, alpha=0.3)
+        if c == 0:
+            ax.set_ylabel('Expert load', fontsize=9)
+
+    for idx in range(n, nrows * ncols):
+        r, c = divmod(idx, ncols)
+        axes[r, c].set_visible(False)
+
+    for c in range(ncols):
+        ax = axes[nrows - 1, c]
+        if ax.get_visible():
+            ax.set_xlabel('Epoch', fontsize=9)
+
+    if first_ax_for_legend is not None:
+        handles, labels = first_ax_for_legend.get_legend_handles_labels()
+        if handles:
+            fig.legend(handles, labels, loc='upper center', ncol=min(4, len(labels)),
+                       fontsize=9, bbox_to_anchor=(0.5, 1.0), frameon=True)
+
+    fig.suptitle('Expert selection vs epoch (mean load over MoE layers)', fontsize=13, y=1.02)
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+    if save_path:
+        plt.savefig(save_path, dpi=200, bbox_inches='tight')
+        print(f"Saved to {save_path}")
+    else:
+        plt.show()
+
+
 # ========== Figure 2: Compare entropy curves across different alpha values ==========
 
 def plot_compare(routing_dirs, save_path=None):
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
+    # Stable order: ascending noise scale α (same metrics as before, clearer legend)
+    def _sort_key(d):
+        a = routing_alpha_from_path(d)
+        return (a is not None, a if a is not None else 0.0, d)
+
+    routing_dirs = sorted(routing_dirs, key=_sort_key)
+
     for routing_dir in routing_dirs:
         alpha_str = routing_dir.rstrip('/').split('_')[-1]
         snapshots = load_all_snapshots(routing_dir)
         if not snapshots:
+            print(f"Warning: no routing_epoch_*.pt in {routing_dir}, skipped")
             continue
 
         epochs = [s['epoch'] for s in snapshots]
@@ -250,25 +429,57 @@ def plot_evolution(routing_dir, module_idx=0, save_path=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Visualize MoE routing statistics')
     parser.add_argument('--mode', type=str, required=True,
-                        choices=['dynamics', 'compare', 'heatmap', 'evolution'],
+                        choices=['dynamics', 'compare', 'expert_loads', 'expert_loads_grid', 'heatmap', 'evolution'],
                         help='dynamics: entropy/load curves; compare: multi-alpha comparison; '
+                             'expert_loads: four experts’ load vs epoch (single routing_dir); '
+                             'expert_loads_grid: same for every α (subplots, --run_roots or --routing_dirs); '
                              'heatmap: per-pixel expert map; evolution: expert map across epochs')
     parser.add_argument('--routing_dir', type=str, default=None,
                         help='Path to routing log directory (for dynamics/heatmap/evolution)')
     parser.add_argument('--routing_dirs', type=str, nargs='+', default=None,
                         help='Paths to multiple routing log directories (for compare)')
+    parser.add_argument('--run_roots', type=str, nargs='+', default=None,
+                        help='Experiment directories each containing one routing_alpha_* folder (for compare)')
     parser.add_argument('--epoch', type=int, default=999,
                         help='Epoch to visualize (for heatmap mode)')
     parser.add_argument('--module_idx', type=int, default=0,
                         help='Which MoE module to visualize (for evolution mode)')
     parser.add_argument('--save', type=str, default=None,
                         help='Save path for the figure (if not set, shows interactively)')
+    parser.add_argument('--expert_grid_ncols', type=int, default=4,
+                        help='Number of columns in expert_loads_grid subplot layout')
     args = parser.parse_args()
 
     if args.mode == 'dynamics':
         plot_dynamics(args.routing_dir, save_path=args.save)
+    elif args.mode == 'expert_loads':
+        if not args.routing_dir:
+            parser.error('expert_loads mode requires --routing_dir')
+        plot_expert_loads(args.routing_dir, save_path=args.save)
+    elif args.mode == 'expert_loads_grid':
+        if args.run_roots and args.routing_dirs:
+            parser.error('Use either --routing_dirs or --run_roots for expert_loads_grid, not both')
+        if args.run_roots:
+            routing_dirs = discover_routing_dirs_from_run_roots(args.run_roots)
+            if not routing_dirs:
+                parser.error('No routing directories discovered from --run_roots')
+            plot_expert_loads_grid(routing_dirs, save_path=args.save, ncols=args.expert_grid_ncols)
+        elif args.routing_dirs:
+            plot_expert_loads_grid(args.routing_dirs, save_path=args.save, ncols=args.expert_grid_ncols)
+        else:
+            parser.error('expert_loads_grid mode requires --routing_dirs or --run_roots')
     elif args.mode == 'compare':
-        plot_compare(args.routing_dirs, save_path=args.save)
+        if args.run_roots and args.routing_dirs:
+            parser.error('Use either --routing_dirs or --run_roots for compare, not both')
+        if args.run_roots:
+            routing_dirs = discover_routing_dirs_from_run_roots(args.run_roots)
+            if not routing_dirs:
+                parser.error('No routing directories discovered from --run_roots')
+            plot_compare(routing_dirs, save_path=args.save)
+        elif args.routing_dirs:
+            plot_compare(args.routing_dirs, save_path=args.save)
+        else:
+            parser.error('compare mode requires --routing_dirs or --run_roots')
     elif args.mode == 'heatmap':
         plot_heatmap(args.routing_dir, args.epoch, save_path=args.save)
     elif args.mode == 'evolution':

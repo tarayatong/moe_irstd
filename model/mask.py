@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -301,29 +303,53 @@ class GroupedChannelSelection(nn.Module):
     
 
 class SpatialNoisyTopkRouter(nn.Module):
-    def __init__(self, in_channels, num_experts, top_k, noise_scale=0.2):
+    """Spatial top-k router that can operate at *region* (patch) granularity.
+
+    When ``patch_size == 1`` (default) the router is exactly pixel-wise and
+    behaves identically to the previous implementation.  When ``patch_size > 1``
+    the router map is computed on a down-sampled feature of size
+    ``(ceil(H / p), ceil(W / p))``, the top-k assignment is made per patch, and
+    the resulting ``indices`` / ``router_output`` maps are nearest-neighbor
+    upsampled back to ``(H, W)`` so that all pixels inside a patch share the
+    same expert selection.  This is the region-based routing variant used in
+    the ablation requested by the reviewer.
+    """
+
+    def __init__(self, in_channels, num_experts, top_k, noise_scale=0.2, patch_size=1):
         super().__init__()
         self.top_k = top_k
         self.num_experts = num_experts
         self.noise_scale = noise_scale
+        self.patch_size = max(int(patch_size), 1)
         self.topkroute_conv = nn.Conv2d(in_channels, num_experts, kernel_size=1)
         self.noise_conv = nn.Conv2d(in_channels, num_experts, kernel_size=1)
 
     def forward(self, x):
         B, _, H, W = x.shape
-        logits = self.topkroute_conv(x) # [b,num_experts, h,w]
-        noise_logits = self.noise_conv(x)
+        p = self.patch_size
+
+        if p > 1:
+            Hp = max(1, int(math.ceil(H / p)))
+            Wp = max(1, int(math.ceil(W / p)))
+            x_routing = F.adaptive_avg_pool2d(x, output_size=(Hp, Wp))
+        else:
+            x_routing = x
+
+        logits = self.topkroute_conv(x_routing)  # [B, E, Hp, Wp]
+        noise_logits = self.noise_conv(x_routing)
         noise = torch.randn_like(logits) * F.softplus(noise_logits)
         noisy_logits = logits + noise * self.noise_scale
 
-        # top-k选择
-        top_k_logits, indices = noisy_logits.topk(self.top_k, dim=1)    # [b, topk, h, w]
-        
-        # 使用softmax生成权重
+        top_k_logits, indices = noisy_logits.topk(self.top_k, dim=1)  # [B, topk, Hp, Wp]
+
         zeros = torch.full_like(noisy_logits, float('-inf'))
         sparse_logits = zeros.scatter(1, indices, top_k_logits)
-        router_output = F.softmax(sparse_logits, dim=1)  # [B, C, num_experts]
-        
+        router_output = F.softmax(sparse_logits, dim=1)  # [B, E, Hp, Wp]
+
+        if p > 1:
+            router_output = F.interpolate(router_output, size=(H, W), mode='nearest')
+            indices = F.interpolate(indices.float(), size=(H, W), mode='nearest').long()
+
         return router_output, indices
 
 class SpatialExpert(nn.Module):
@@ -340,9 +366,22 @@ class SpatialExpert(nn.Module):
 
 
 class SpatialSparseMoE(nn.Module):
-    def __init__(self, n_embed, num_experts, top_k, out_channels, experts=None, noise_scale=0.2):
+    """Sparse MoE with optional region-based (patch-wise) spatial routing.
+
+    The ``patch_size`` argument controls the granularity of expert selection:
+    ``patch_size=1`` recovers the original pixel-wise routing, while
+    ``patch_size>1`` partitions the spatial map into non-overlapping
+    ``patch_size x patch_size`` regions and assigns one expert combination per
+    region, reducing the router FLOPs from O(H*W*C*E) to O((H/p)*(W/p)*C*E).
+    """
+
+    def __init__(self, n_embed, num_experts, top_k, out_channels, experts=None,
+                 noise_scale=0.2, patch_size=1):
         super(SpatialSparseMoE, self).__init__()
-        self.router = SpatialNoisyTopkRouter(n_embed, num_experts, top_k, noise_scale=noise_scale)
+        self.patch_size = max(int(patch_size), 1)
+        self.router = SpatialNoisyTopkRouter(n_embed, num_experts, top_k,
+                                             noise_scale=noise_scale,
+                                             patch_size=self.patch_size)
         self.experts = nn.ModuleList([Expert(n_embed, out_channels) for _ in range(num_experts)]) if experts is None else experts
         self.top_k = top_k
         self.num_experts = num_experts
@@ -351,12 +390,12 @@ class SpatialSparseMoE(nn.Module):
 
     def forward(self, x):
         B, C, H, W = x.shape
-        gating_output, indices = self.router(x) # [b,num_experts, h,w] [b,topk, h,w]
+        gating_output, indices = self.router(x) # [B, E, H, W], [B, topk, H, W]
         final_output = torch.zeros_like(x)
 
         for i, expert in enumerate(self.experts):
-            expert_mask = (indices == i).any(dim=1) # [b,h,w]
-            expert_mask = expert_mask.unsqueeze(1).expand_as(x) # [b,c,h,w]
+            expert_mask = (indices == i).any(dim=1) # [B, H, W]
+            expert_mask = expert_mask.unsqueeze(1).expand_as(x) # [B, C, H, W]
             
             if expert_mask.any():
                 expert_input = torch.where(expert_mask, x, torch.zeros_like(x))
@@ -368,17 +407,31 @@ class SpatialSparseMoE(nn.Module):
 
         if self.record_routing:
             with torch.no_grad():
-                prob = gating_output.detach()
+                # For region routing the meaningful unit of a routing decision
+                # is one patch, so we down-sample before computing entropy/load
+                # statistics to avoid double counting identical neighbours.
+                if self.patch_size > 1:
+                    Hp = max(1, int(math.ceil(H / self.patch_size)))
+                    Wp = max(1, int(math.ceil(W / self.patch_size)))
+                    prob = F.adaptive_avg_pool2d(gating_output.detach(),
+                                                 output_size=(Hp, Wp))
+                    idx_ds = F.adaptive_max_pool2d(indices.float(),
+                                                   output_size=(Hp, Wp)).long()
+                else:
+                    prob = gating_output.detach()
+                    idx_ds = indices
+
                 entropy = -(prob * (prob + 1e-8).log()).sum(dim=1).mean()
                 load = torch.zeros(self.num_experts, device=x.device)
                 for ei in range(self.num_experts):
-                    load[ei] = (indices == ei).any(dim=1).float().mean()
+                    load[ei] = (idx_ds == ei).any(dim=1).float().mean()
                 stats = {
                     'entropy': entropy.item(),
                     'load': load.cpu(),
+                    'patch_size': self.patch_size,
                 }
                 if self.record_routing == 'full':
-                    stats['indices'] = indices.cpu()
+                    stats['indices'] = idx_ds.cpu()
                     stats['gating'] = prob.cpu()
                 self.last_routing_stats = stats
 

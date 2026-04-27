@@ -79,6 +79,32 @@ def parse_args():
                         help='dilation rates for BasicRFB_a branches, e.g. 1,2,2,3')
     parser.add_argument('--noise_scale', type=float, default=0.2,
                         help='noise scale factor alpha for SpatialNoisyTopkRouter')
+    parser.add_argument('--patch_size', type=str, default='1',
+                        help='MoE routing granularity. A single int (e.g. "1" '
+                             'for pixel-wise, "4" for 4x4 region routing) or a '
+                             'comma-separated per-stage list (e.g. "1,2,4,8" '
+                             'for hierarchical layer-wise routing).')
+
+    # ---- routing-map & checkpoint snapshot saving --------------------------
+    # Saving routing maps every iteration is expensive, so all snapshots are
+    # opt-in via the following flags.
+    parser.add_argument('--save_routing', type=str, default='none',
+                        choices=['none', 'lite', 'full'],
+                        help='Whether to dump per-expert routing maps to disk. '
+                             '"none" (default): never save -- fastest training. '
+                             '"lite": save only entropy + per-expert load stats. '
+                             '"full": also save indices / gating maps + a batch '
+                             'of input/labels (large, only enable when needed '
+                             'for heatmap visualization).')
+    parser.add_argument('--routing_epochs', type=str,
+                        default='0,1,5,10,50,100,200,300,500,700,999',
+                        help='Comma-separated epochs at which to dump routing '
+                             'snapshots when --save_routing != none. Set to '
+                             'an empty string to disable per-epoch saving.')
+    parser.add_argument('--save_intermediate_ckpt', action='store_true',
+                        help='Also save a model checkpoint at every '
+                             '--routing_epochs entry (off by default; the '
+                             'best-IoU checkpoint is always saved separately).')
 
     args = parser.parse_args()
     args.base_size = 256
@@ -92,7 +118,7 @@ def parse_args():
     args.test_batch_size = 4
     args.moe_stages = '1,1,1,1'
     args.dilations = '1,2,2,3'
-    args.noise_scale = 0.0
+    args.noise_scale = 0.2
     # # args.lr = 0.02
 
     # args.base_size = 512
@@ -110,6 +136,17 @@ def parse_args():
 
     args.moe_stages = [bool(int(x)) for x in args.moe_stages.split(',')] if args.moe_stages else None
     args.dilations = [int(x) for x in args.dilations.split(',')]
+    if args.patch_size is None or args.patch_size == '':
+        args.patch_size = 1
+    elif ',' in args.patch_size:
+        args.patch_size = [int(x) for x in args.patch_size.split(',') if x.strip() != '']
+    else:
+        args.patch_size = int(args.patch_size)
+
+    if args.routing_epochs is None or args.routing_epochs.strip() == '':
+        args.routing_epochs = set()
+    else:
+        args.routing_epochs = {int(x) for x in args.routing_epochs.split(',') if x.strip() != ''}
     # make dir for save result
     args.save_dir = make_dir(args.deep_supervision, args.dataset, args.model)
     # save training log

@@ -12,11 +12,35 @@ from model.mobile_mamba import MobileMambaBlock
 logging.getLogger('thop').setLevel(logging.WARNING)
 
 class DNANet(nn.Module):
-    def __init__(self, num_classes, input_channels, block, num_blocks, nb_filter,stage=4, block_count=4, moe_stages=None, dilations=None, noise_scale=0.2):   # [16, 32, 64, 128, 256] [2,2,2,2]
+    def __init__(self, num_classes, input_channels, block, num_blocks, nb_filter,
+                 stage=4, block_count=4, moe_stages=None, dilations=None, noise_scale=0.2,
+                 patch_size=1):   # [16, 32, 64, 128, 256] [2,2,2,2]
+        """
+        Args:
+            patch_size: granularity of MoE spatial routing.  Supports
+                * ``int``  – the same patch size is used for every stage
+                  (router map = feature_map // patch_size).  ``patch_size=1``
+                  reproduces the original pixel-wise routing.
+                * ``list``/``tuple`` of length ``stage`` – per-stage patch
+                  size, e.g. ``[1, 2, 4, 8]`` for hierarchical region routing.
+                * ``None`` – treated as ``1`` (pixel-wise).
+        """
         super(DNANet, self).__init__()
         if moe_stages is None:
             moe_stages = [True] * stage
         self.moe_stages = moe_stages
+
+        # Normalise ``patch_size`` to a per-stage list so each MoE block can be
+        # configured independently (plan B: optional layer-wise ablation).
+        if patch_size is None:
+            patch_size_list = [1] * stage
+        elif isinstance(patch_size, (list, tuple)):
+            assert len(patch_size) == stage, (
+                f"patch_size list length {len(patch_size)} != stage {stage}")
+            patch_size_list = [max(int(p), 1) for p in patch_size]
+        else:
+            patch_size_list = [max(int(patch_size), 1)] * stage
+        self.patch_size_list = patch_size_list
         input_size=512
         self.relu = nn.ReLU(inplace = True)
         self.pool  = nn.MaxPool2d(2, 2)
@@ -60,7 +84,10 @@ class DNANet(nn.Module):
                 if self.moe_stages[i]:
                     self.node_list[j][i] = nn.Sequential(
                             ConvBNReLU(inp_c, nb_filter[i], 3),
-                            MobileMambaBlock('s', nb_filter[i], 0.7, 0.2, 5, 0, ssm_ratio=2, layer=i, dilations=dilations, noise_scale=noise_scale),
+                            MobileMambaBlock('s', nb_filter[i], 0.7, 0.2, 5, 0, ssm_ratio=2,
+                                             layer=i, dilations=dilations,
+                                             noise_scale=noise_scale,
+                                             patch_size=self.patch_size_list[i]),
                             )
                 else:
                     self.node_list[j][i] = self._make_layer(block, inp_c, nb_filter[i], stride=1)

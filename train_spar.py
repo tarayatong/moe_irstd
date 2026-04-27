@@ -67,7 +67,7 @@ class Trainer(object):
         # Choose and load model (this paper is finished by one GPU)
         if args.model   == 'DNANet':
             from model.model_mask_s_shape import DNANet
-            model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter, moe_stages=args.moe_stages, dilations=args.dilations, noise_scale=args.noise_scale)   # , batch_size=args.train_batch_size
+            model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter, moe_stages=args.moe_stages, dilations=args.dilations, noise_scale=args.noise_scale, patch_size=args.patch_size)   # , batch_size=args.train_batch_size
         elif args.model   == 's4decode':
             from model.model_decode import DNANet
             model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter)
@@ -180,6 +180,11 @@ class Trainer(object):
         snapshot = {
             'epoch': epoch,
             'modules': all_stats,
+            'meta': {
+                'noise_scale': getattr(args, 'noise_scale', None),
+                'patch_size': getattr(args, 'patch_size', None),
+                'mode': mode,
+            },
         }
         if mode == 'full':
             snapshot['input'] = data.cpu()
@@ -233,15 +238,41 @@ class Trainer(object):
 
 def main(args):
     trainer = Trainer(args)
-    routing_log_dir = os.path.join(args.save_dir, f'routing_alpha_{args.noise_scale}')
-    routing_epochs = {0, 1, 5, 10, 50, 100, 200, 300, 500, 700, 999}
-    # α=0.2 保存完整数据（可画热力图），其他只保存统计量（entropy+load）
-    routing_mode = 'full' if args.noise_scale == 0.2 else 'lite'
+
+    # All routing/intermediate-checkpoint saving is opt-in via CLI flags --
+    # otherwise we skip the extra forward pass + disk I/O entirely.
+    save_routing = getattr(args, 'save_routing', 'none')
+    routing_epochs = getattr(args, 'routing_epochs', set()) or set()
+    save_intermediate_ckpt = getattr(args, 'save_intermediate_ckpt', False)
+
+    if save_routing != 'none' and routing_epochs:
+        ps_tag = args.patch_size if isinstance(args.patch_size, int) else \
+                 '-'.join(str(p) for p in args.patch_size)
+        routing_log_dir = os.path.join(
+            args.save_dir,
+            f'routing_alpha_{args.noise_scale}_p{ps_tag}')
+        os.makedirs(routing_log_dir, exist_ok=True)
+        print(f'[routing] mode={save_routing}  '
+              f'epochs={sorted(routing_epochs)}  dir={routing_log_dir}')
+    else:
+        routing_log_dir = None
+        print('[routing] disabled (use --save_routing lite|full to enable).')
+
+    ckpt_log_dir = None
+    if save_intermediate_ckpt and routing_epochs:
+        ckpt_log_dir = os.path.join(args.save_dir, 'intermediate_ckpts')
+        os.makedirs(ckpt_log_dir, exist_ok=True)
+
     for epoch in range(args.start_epoch, args.epochs):
         trainer.training(epoch)
         trainer.testing(epoch)
         if epoch in routing_epochs:
-            trainer.save_routing_snapshot(epoch, save_dir=routing_log_dir, mode=routing_mode)
+            if routing_log_dir is not None:
+                trainer.save_routing_snapshot(epoch, save_dir=routing_log_dir,
+                                              mode=save_routing)
+            if ckpt_log_dir is not None:
+                torch.save(trainer.model.state_dict(),
+                           os.path.join(ckpt_log_dir, f'ckpt_epoch_{epoch}.pth'))
     input = torch.randn(1, 3, 256, 256).cuda()
     trainer.model_info(trainer.model, input)
 
