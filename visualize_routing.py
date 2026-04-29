@@ -350,20 +350,30 @@ def plot_heatmap(routing_dir, epoch, save_path=None):
     cmap = plt.cm.get_cmap('tab10', num_experts)
 
     for mi, mod in enumerate(modules):
-        indices = mod['indices'][img_idx]   # [topk, H, W]
-        gating = mod['gating'][img_idx]     # [num_experts, H, W]
+        indices = mod['indices'][img_idx]   # [topk, H', W'] (H' = H/patch_size)
+        gating = mod['gating'][img_idx]     # [num_experts, H', W']
+        patch_size = int(mod.get('patch_size', 1))
 
         dominant_expert = indices[0].numpy()
         h_mod, w_mod = dominant_expert.shape
+        if patch_size > 1:
+            # Up-sample patch-level decisions back to input resolution so the
+            # heat-map aligns with the input image / GT mask.
+            dominant_expert = np.kron(dominant_expert, np.ones((patch_size, patch_size), dtype=dominant_expert.dtype))
         short_name = mod['name'].split('.')[-2] if '.' in mod['name'] else mod['name']
 
         ax_assign = fig.add_subplot(gs[0, 2 + mi * cols_per_module])
         im = ax_assign.imshow(dominant_expert, cmap=cmap, vmin=0, vmax=num_experts - 1, interpolation='nearest')
-        ax_assign.set_title(f'{short_name}\nExpert Map ({h_mod}x{w_mod})', fontsize=9)
+        title = f'{short_name}\nExpert Map ({h_mod}x{w_mod})'
+        if patch_size > 1:
+            title += f', p={patch_size}'
+        ax_assign.set_title(title, fontsize=9)
         ax_assign.axis('off')
 
         ax_entropy = fig.add_subplot(gs[0, 3 + mi * cols_per_module])
         entropy_map = -(gating * (gating + 1e-8).log()).sum(dim=0).numpy()
+        if patch_size > 1:
+            entropy_map = np.kron(entropy_map, np.ones((patch_size, patch_size), dtype=entropy_map.dtype))
         ax_entropy.imshow(entropy_map, cmap='viridis', interpolation='nearest')
         ax_entropy.set_title(f'{short_name}\nEntropy Map', fontsize=9)
         ax_entropy.axis('off')

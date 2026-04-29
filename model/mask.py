@@ -373,11 +373,38 @@ class SpatialSparseMoE(nn.Module):
     ``patch_size>1`` partitions the spatial map into non-overlapping
     ``patch_size x patch_size`` regions and assigns one expert combination per
     region, reducing the router FLOPs from O(H*W*C*E) to O((H/p)*(W/p)*C*E).
+
+    Routing is *sparse* by construction: ``router`` selects the top-k experts
+    per (region) location and forms ``gating_output`` via softmax on the
+    masked logits, so non-selected positions contribute exactly zero -- there
+    is no dense weighted fusion.
+
+    Auxiliary load-balancing loss (Switch Transformer style) is exposed via
+    ``self.last_aux_loss`` after every forward call when ``self.training``
+    is True.  The trainer is responsible for collecting and adding it to the
+    main objective with a coefficient.
+
+    **Expert input routing** (``input_routing``):
+
+    * ``"full"`` (V-MoE style, default): every expert receives the **full**
+      feature map ``x``; only the **output** is made sparse by multiplying
+      with the hard top-k gating tensor.  This avoids zero-hole artifacts
+      from convs seeing masked inputs while keeping per-pixel sparse
+      combinations.
+
+    * ``"sparse"`` (legacy): zero out pixels that do not route to expert
+      ``i`` before ``expert_i(x)``.  Identical to the original implementation;
+      retained for ablation / checkpoint compatibility.
     """
 
     def __init__(self, n_embed, num_experts, top_k, out_channels, experts=None,
-                 noise_scale=0.2, patch_size=1):
+                 noise_scale=0.2, patch_size=1, input_routing='full'):
         super(SpatialSparseMoE, self).__init__()
+        ir = str(input_routing).lower()
+        if ir not in ('full', 'sparse'):
+            raise ValueError("input_routing must be 'full' (V-MoE) or 'sparse' (legacy), "
+                             f"got {input_routing!r}")
+        self.input_routing = ir
         self.patch_size = max(int(patch_size), 1)
         self.router = SpatialNoisyTopkRouter(n_embed, num_experts, top_k,
                                              noise_scale=noise_scale,
@@ -387,23 +414,76 @@ class SpatialSparseMoE(nn.Module):
         self.num_experts = num_experts
         self.record_routing = None  # None, 'full', or 'lite'
         self.last_routing_stats = None
+        self.last_aux_loss = None
+
+    def _compute_aux_loss(self, gating_output, indices):
+        """Switch-style auxiliary load-balancing loss.
+
+        Args:
+            gating_output: [B, E, H, W] softmax probabilities (sum to 1 over E).
+            indices:       [B, topk, H, W] hard top-k expert assignments.
+
+        At uniform routing this loss equals 1; at full collapse it equals E,
+        so adding it with a small weight (e.g. 1e-2) discourages winner-take-
+        all behaviour while flowing gradients through ``gating_output``.
+        """
+        E = self.num_experts
+        # f_i: fraction of routing decisions assigned to expert i.
+        # one_hot: [B, topk, H, W, E] -> sum over topk -> [B, H, W, E]
+        one_hot = F.one_hot(indices, num_classes=E).float()
+        f = one_hot.sum(dim=1).mean(dim=(0, 1, 2))  # [E], sums to topk
+        # P_i: mean softmax probability for expert i (differentiable).
+        # gating_output: [B, E, H, W] -> mean over B, H, W -> [E]
+        P = gating_output.mean(dim=(0, 2, 3))  # [E], sums to 1
+        aux = E * (f * P).sum() / max(self.top_k, 1)
+        return aux
+
+    def _accumulate_experts_vmoe_full_input(self, x, gating_output, final_output):
+        """V-MoE: full-map forward per expert, sparse combination via gating only."""
+        _, C, _, _ = x.shape
+        for i, expert in enumerate(self.experts):
+            expert_weights = gating_output[:, i : i + 1]  # [B, 1, H, W]
+            if not expert_weights.any():
+                continue
+            expert_output = expert(x)
+            final_output = final_output + expert_output * expert_weights.expand(
+                -1, C, -1, -1
+            )
+        return final_output
+
+    def _accumulate_experts_legacy_masked_input(self, x, gating_output, indices, final_output):
+        """Original path: mask the input to each expert by routed pixels (legacy)."""
+        for i, expert in enumerate(self.experts):
+            expert_mask = (indices == i).any(dim=1)  # [B, H, W]
+            expert_mask = expert_mask.unsqueeze(1).expand_as(x)
+
+            if expert_mask.any():
+                expert_input = torch.where(expert_mask, x, torch.zeros_like(x))
+                expert_output = expert(expert_input)
+                expert_weights = gating_output[:, i : i + 1].expand(-1, x.size(1), -1, -1)
+                final_output = final_output + expert_output * expert_weights
+        return final_output
 
     def forward(self, x):
         B, C, H, W = x.shape
         gating_output, indices = self.router(x) # [B, E, H, W], [B, topk, H, W]
         final_output = torch.zeros_like(x)
 
-        for i, expert in enumerate(self.experts):
-            expert_mask = (indices == i).any(dim=1) # [B, H, W]
-            expert_mask = expert_mask.unsqueeze(1).expand_as(x) # [B, C, H, W]
-            
-            if expert_mask.any():
-                expert_input = torch.where(expert_mask, x, torch.zeros_like(x))
-                expert_output = expert(expert_input)  # [B, C, H, W]
-                expert_weights = gating_output[:, i:i+1]
-                expert_weights = expert_weights.expand(-1, C, -1, -1)
-                weighted_output = expert_output * expert_weights
-                final_output = final_output + weighted_output
+        if self.input_routing == 'full':
+            final_output = self._accumulate_experts_vmoe_full_input(
+                x, gating_output, final_output
+            )
+        else:
+            final_output = self._accumulate_experts_legacy_masked_input(
+                x, gating_output, indices, final_output
+            )
+
+        # Compute auxiliary load-balancing loss only during training so eval
+        # / inference keeps the original cost.
+        if self.training:
+            self.last_aux_loss = self._compute_aux_loss(gating_output, indices)
+        else:
+            self.last_aux_loss = None
 
         if self.record_routing:
             with torch.no_grad():
@@ -481,9 +561,11 @@ class SpatialSparse(nn.Module):
         return final_output
 
 class SpatialMoELayer(nn.Module):
-    def __init__(self, in_channels, out_channels, num_experts, top_k):
+    def __init__(self, in_channels, out_channels, num_experts, top_k, input_routing='full'):
         super().__init__()
-        self.moe = SpatialSparseMoE(in_channels, num_experts, top_k, out_channels)
+        self.moe = SpatialSparseMoE(
+            in_channels, num_experts, top_k, out_channels, input_routing=input_routing
+        )
     
     def forward(self, x):
         # x: [batch_size, in_channels, height, width]

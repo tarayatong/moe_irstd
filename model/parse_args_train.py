@@ -84,6 +84,22 @@ def parse_args():
                              'for pixel-wise, "4" for 4x4 region routing) or a '
                              'comma-separated per-stage list (e.g. "1,2,4,8" '
                              'for hierarchical layer-wise routing).')
+    parser.add_argument('--top_k', type=int, default=2,
+                        help='Number of experts activated per (region) '
+                             'location. top_k=1 yields hard Switch-style '
+                             'routing (purely sparse, no fusion); top_k>=2 '
+                             'enables soft top-k weighted combination on top '
+                             'of the sparse selection.')
+    parser.add_argument('--aux_loss_weight', type=float, default=1e-2,
+                        help='Coefficient for the Switch-style load-balancing '
+                             'auxiliary loss. Set 0.0 to disable.')
+    parser.add_argument('--input_routing', type=str, default='full',
+                        choices=['full', 'sparse'],
+                        help='How each expert sees the input feature map. '
+                             '"full" (V-MoE): expert always receives the full '
+                             'map; sparsity is only on the gated *output*. '
+                             '"sparse" (legacy): zero-out unrouted pixels before '
+                             'each expert (original behaviour).')
 
     # ---- routing-map & checkpoint snapshot saving --------------------------
     # Saving routing maps every iteration is expensive, so all snapshots are
@@ -119,6 +135,22 @@ def parse_args():
     args.moe_stages = '1,1,1,1'
     args.dilations = '1,2,2,3'
     args.noise_scale = 0.2
+    # MoE routing granularity (uniform OR per-stage). Examples:
+    #   '1'         pixel-wise (paper baseline)
+    #   '4'         uniform 4x4 region routing
+    #   '1,2,4,8'   layer-wise hierarchical routing
+    #   '256'       global per-image routing
+    args.patch_size = '1'
+    # MoE sparsity & load-balancing.
+    #   top_k=1   -> hard Switch routing (single expert per region)
+    #   top_k=2   -> soft top-2 weighted combination on top of sparse selection
+    # aux_loss_weight is the coefficient on the Switch load-balancing loss;
+    # 1e-2 follows Switch Transformer / GShard. Set 0 to ablate.
+    args.top_k = 2
+    args.aux_loss_weight = 1e-2
+    # Expert input: 'full' = V-MoE (all experts see full feature map);
+    # 'sparse' = legacy masked input before each expert convolution.
+    args.input_routing = 'full'
     # # args.lr = 0.02
 
     # args.base_size = 512

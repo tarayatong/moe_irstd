@@ -14,7 +14,7 @@ logging.getLogger('thop').setLevel(logging.WARNING)
 class DNANet(nn.Module):
     def __init__(self, num_classes, input_channels, block, num_blocks, nb_filter,
                  stage=4, block_count=4, moe_stages=None, dilations=None, noise_scale=0.2,
-                 patch_size=1):   # [16, 32, 64, 128, 256] [2,2,2,2]
+                 patch_size=1, top_k=2, input_routing='full'):   # [16, 32, 64, 128, 256] [2,2,2,2]
         """
         Args:
             patch_size: granularity of MoE spatial routing.  Supports
@@ -41,6 +41,10 @@ class DNANet(nn.Module):
         else:
             patch_size_list = [max(int(patch_size), 1)] * stage
         self.patch_size_list = patch_size_list
+        self.top_k = max(int(top_k), 1)
+        ir = str(input_routing).lower()
+        assert ir in ('full', 'sparse'), f"input_routing must be 'full' or 'sparse', got {input_routing!r}"
+        self.input_routing = ir
         input_size=512
         self.relu = nn.ReLU(inplace = True)
         self.pool  = nn.MaxPool2d(2, 2)
@@ -87,7 +91,9 @@ class DNANet(nn.Module):
                             MobileMambaBlock('s', nb_filter[i], 0.7, 0.2, 5, 0, ssm_ratio=2,
                                              layer=i, dilations=dilations,
                                              noise_scale=noise_scale,
-                                             patch_size=self.patch_size_list[i]),
+                                             patch_size=self.patch_size_list[i],
+                                             top_k=self.top_k,
+                                             input_routing=self.input_routing),
                             )
                 else:
                     self.node_list[j][i] = self._make_layer(block, inp_c, nb_filter[i], stride=1)

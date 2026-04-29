@@ -67,7 +67,7 @@ class Trainer(object):
         # Choose and load model (this paper is finished by one GPU)
         if args.model   == 'DNANet':
             from model.model_mask_s_shape import DNANet
-            model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter, moe_stages=args.moe_stages, dilations=args.dilations, noise_scale=args.noise_scale, patch_size=args.patch_size)   # , batch_size=args.train_batch_size
+            model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter, moe_stages=args.moe_stages, dilations=args.dilations, noise_scale=args.noise_scale, patch_size=args.patch_size, top_k=args.top_k, input_routing=args.input_routing)   # , batch_size=args.train_batch_size
         elif args.model   == 's4decode':
             from model.model_decode import DNANet
             model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter)
@@ -127,7 +127,11 @@ class Trainer(object):
     def training(self,epoch):   # 数据 模型 损失   
         tbar = tqdm(self.train_data)    # 终端显示进度条 tqdm参数是dataloader
         self.model.train()  # 初始化定义模型为DNANet，放在cuda上
-        losses = AverageMeter()     # 损失类 初始为0
+        losses = AverageMeter()     # 总损失 (主损失 + aux*weight)
+        main_losses = AverageMeter()
+        aux_losses = AverageMeter()
+
+        aux_w = float(getattr(args, 'aux_loss_weight', 0.0))
 
         # 使用torch.cuda.profiler.profile函数包装训练代码
         for i, (data, labels) in enumerate(tbar):  # dataset getitem的返回形式
@@ -137,18 +141,49 @@ class Trainer(object):
             torch.cuda.synchronize()
             start = time.time()
             preds = self.model(data)
-            loss = self.lossfunc(preds, labels)
-            pred =preds[-1] # 最终结果是最后的输出图
+            main_loss = self.lossfunc(preds, labels)
+            pred = preds[-1] # 最终结果是最后的输出图
+
+            # ---- Switch-style auxiliary load-balancing loss ---------------
+            # Each SpatialSparseMoE module exposes its per-forward aux loss
+            # via .last_aux_loss; we average across modules so the magnitude
+            # is independent of network depth.
+            aux_loss = self._collect_aux_loss(self.model)
+            if aux_w > 0.0 and aux_loss is not None:
+                loss = main_loss + aux_w * aux_loss
+                aux_val = aux_loss.item()
+            else:
+                loss = main_loss
+                aux_val = 0.0
+
             self.optimizer.zero_grad()  # 优化器初始化
             loss.backward() # 损失回传
             self.optimizer.step()   # 优化迭代
-            losses.update(loss.item(), pred.size(0))    # AverageMeter这个类中写更新方法 损失项求均值
+
+            losses.update(loss.item(), pred.size(0))
+            main_losses.update(main_loss.item(), pred.size(0))
+            aux_losses.update(aux_val, pred.size(0))
               # 终端输出进度
             torch.cuda.synchronize()
             end = time.time()
             infer_time = end-start
-            tbar.set_description('Epoch %d, training loss %.4f, iou loss: %.4f, FPS %.4f' % (epoch, losses.avg, loss.mean(), args.train_batch_size/infer_time))
+            tbar.set_description(
+                'Epoch %d | total %.4f  main %.4f  aux %.4f  FPS %.2f' % (
+                    epoch, losses.avg, main_losses.avg, aux_losses.avg,
+                    args.train_batch_size/infer_time))
         self.train_loss = losses.avg    # 最终损失是平均值
+        self.train_aux_loss = aux_losses.avg
+
+    def _collect_aux_loss(self, model):
+        """Sum the per-module Switch load-balancing loss across all
+        SpatialSparseMoE layers and average so the magnitude is roughly
+        independent of network depth.  Returns ``None`` when no module has
+        produced a loss this step (e.g. all in eval mode)."""
+        items = [m.last_aux_loss for m in model.modules()
+                 if isinstance(m, SpatialSparseMoE) and m.last_aux_loss is not None]
+        if not items:
+            return None
+        return torch.stack(items).mean()
 
     def _set_routing_record(self, model, mode):
         for m in model.modules():
@@ -183,6 +218,7 @@ class Trainer(object):
             'meta': {
                 'noise_scale': getattr(args, 'noise_scale', None),
                 'patch_size': getattr(args, 'patch_size', None),
+                'input_routing': getattr(args, 'input_routing', None),
                 'mode': mode,
             },
         }
