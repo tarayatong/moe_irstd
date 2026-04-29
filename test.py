@@ -32,9 +32,26 @@ class Trainer(object):
         args.mode = 'TXT'
         args.moe_stages = '1,1,1,1'
         args.dilations = '1,2,2,3'
-        args.noise_scale = 0.0
+        # —— 必须与 train_spar / parse_args_train 里该次实验一致（否则指标对不上）——
+        # router 噪声：训练用 0.2 则此处也应用 0.2；此前写 0.0 但未传入 DNANet，实际仍是默认 0.2
+        args.noise_scale = 0.2
+        # 单尺度 e.g. '4'；逐 stage e.g. '1,2,4,8'；也可用 CLI --patch_size 覆盖（须在下列解析前保留）
+        if not hasattr(args, 'patch_size') or args.patch_size is None:
+            args.patch_size = '1'
         args.moe_stages = [bool(int(x)) for x in args.moe_stages.split(',')]
         args.dilations = [int(x) for x in args.dilations.split(',')]
+        if isinstance(args.patch_size, str):
+            if args.patch_size.strip() == '':
+                args.patch_size = 1
+            elif ',' in args.patch_size:
+                args.patch_size = [
+                    int(x) for x in args.patch_size.split(',') if x.strip() != ''
+                ]
+            else:
+                args.patch_size = int(args.patch_size)
+        # 若不用 CLI，可在此写死与某次训练完全一致的配置（会覆盖上面 parse_args_test 的结果）：
+        # args.patch_size = 4
+        # args.noise_scale = 0.2
 
         # Initial
         self.args  = args
@@ -53,7 +70,8 @@ class Trainer(object):
         # Read image index from TXT
         if args.mode    == 'TXT':
             dataset_dir = args.root + '/' + args.dataset
-            train_img_ids, _, val_img_ids=load_dataset(args.root, args.dataset,args.split_method)
+            # load_dataset 返回 (train, val占位空列表, test) —— 原变量名 val_img_ids 实际为 test 集
+            train_img_ids, _, val_img_ids = load_dataset(args.root, args.dataset, args.split_method)
         if args.mode == 'SIATD10seq':
             dataset_dir = args.root + '/' + args.dataset
             train_img_ids, _, val_img_ids = load_dataset_5folders(args.root, args.dataset, args.split_method)
@@ -68,11 +86,26 @@ class Trainer(object):
 
         # Choose and load model (this paper is finished by one GPU)
 
-        model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter, moe_stages=args.moe_stages, dilations=args.dilations)
+        # 与 train_spar.py 中 DNANet(...) 参数对齐；缺 patch_size / noise_scale 会导致
+        # 测试始终为默认 patch_size=1、noise_scale=0.2，与 patch 消融训练记录不一致。
+        model = DNANet(
+            num_classes=1,
+            input_channels=args.in_channels,
+            block=Res_CBAM_block,
+            num_blocks=num_blocks,
+            nb_filter=nb_filter,
+            moe_stages=args.moe_stages,
+            dilations=args.dilations,
+            noise_scale=args.noise_scale,
+            patch_size=args.patch_size,
+        )
 
         model           = model.cuda()
         model.apply(weights_init_xavier)
-        print("Model Initializing")
+        print(
+            "Model Initializing | test MoE: noise_scale=%s patch_size=%s"
+            % (args.noise_scale, args.patch_size)
+        )
         self.model      = model
         self.lossfunc = spar_iou_loss
 
@@ -82,7 +115,16 @@ class Trainer(object):
 
         # Load trained model
         checkpoint        = torch.load(result_dir + args.model_dir)
-        self.model.load_state_dict(checkpoint['state_dict'], strict=False)
+        ret = self.model.load_state_dict(checkpoint['state_dict'], strict=False)
+        if getattr(ret, 'missing_keys', None) or getattr(ret, 'unexpected_keys', None):
+            print(
+                '[WARN] load_state_dict strict=False | missing %d | unexpected %d'
+                % (len(ret.missing_keys), len(ret.unexpected_keys))
+            )
+            if ret.missing_keys:
+                print('  missing (first 8):', ret.missing_keys[:8])
+            if ret.unexpected_keys:
+                print('  unexpected (first 8):', ret.unexpected_keys[:8])
 
         # Test
         self.model.eval()

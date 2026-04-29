@@ -65,10 +65,22 @@ def parse_args():
                         help='which stages use MoE, e.g. 1,1,1,1 for all, 0,0,1,1 for low-res only')
     parser.add_argument('--dilations', type=str, default='1,2,2,3',
                         help='dilation rates for BasicRFB_a branches, e.g. 1,2,2,3')
+    # 必须与训练 build 模型时一致，否则 load_state_dict 虽能载入权重，
+    # MoE 前向路由粒度/router 噪声等与训练不同，指标会明显偏差。
+    parser.add_argument('--noise_scale', type=float, default=0.2,
+                        help='SpatialNoisyTopkRouter alpha; 必须与训练 ./train_spar 一致')
+    parser.add_argument('--patch_size', type=str, default='1',
+                        help='MoE router 粒度：单整数或逗号分隔 per-stage 列表，须与训练一致')
 
     args = parser.parse_args()
     args.moe_stages = [bool(int(x)) for x in args.moe_stages.split(',')]
     args.dilations = [int(x) for x in args.dilations.split(',')]
+    if args.patch_size is None or args.patch_size == '':
+        args.patch_size = 1
+    elif ',' in args.patch_size:
+        args.patch_size = [int(x) for x in args.patch_size.split(',') if x.strip() != '']
+    else:
+        args.patch_size = int(args.patch_size)
 
     # the parser
     return args
