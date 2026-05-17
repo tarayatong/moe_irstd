@@ -113,7 +113,7 @@ def parse_args():
                              'of input/labels (large, only enable when needed '
                              'for heatmap visualization).')
     parser.add_argument('--routing_epochs', type=str,
-                        default='0,1,5,10,50,100,200,300,500,700,999',
+                        default='',
                         help='Comma-separated epochs at which to dump routing '
                              'snapshots when --save_routing != none. Set to '
                              'an empty string to disable per-epoch saving.')
@@ -126,7 +126,7 @@ def parse_args():
     args.base_size = 256
     args.crop_size = 256
     args.epochs = 1000
-    args.dataset = 'NUAA-SIRST'
+    args.dataset = 'DenseSIRST'
     args.split_method = '50_50'
     args.model = 'DNANet'
     args.backbone = 'resnet_18'
@@ -151,6 +151,10 @@ def parse_args():
     # Expert input: 'full' = V-MoE (all experts see full feature map);
     # 'sparse' = legacy masked input before each expert convolution.
     args.input_routing = 'full'
+    # Default training run: no intermediate checkpoints or routing snapshots.
+    args.save_routing = 'none'
+    args.routing_epochs = ''
+    args.save_intermediate_ckpt = False
     # # args.lr = 0.02
 
     # args.base_size = 512

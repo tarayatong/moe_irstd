@@ -44,3 +44,7 @@ selective_scan
 model_parallel.py
 router/
 NUAA-SIRST_DNANet_*
+*grid*
+make_*
+routing_export/
+*.sh

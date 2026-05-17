@@ -336,9 +336,12 @@ class SpatialNoisyTopkRouter(nn.Module):
             x_routing = x
 
         logits = self.topkroute_conv(x_routing)  # [B, E, Hp, Wp]
-        noise_logits = self.noise_conv(x_routing)
-        noise = torch.randn_like(logits) * F.softplus(noise_logits)
-        noisy_logits = logits + noise * self.noise_scale
+        if self.training and self.noise_scale > 0:
+            noise_logits = self.noise_conv(x_routing)
+            noise = torch.randn_like(logits) * F.softplus(noise_logits)
+            noisy_logits = logits + noise * self.noise_scale
+        else:
+            noisy_logits = logits
 
         top_k_logits, indices = noisy_logits.topk(self.top_k, dim=1)  # [B, topk, Hp, Wp]
 

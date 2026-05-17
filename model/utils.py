@@ -27,7 +27,7 @@ class TrainSetLoader(Dataset):
         self.crop_size = crop_size
         self.suffix = suffix
         self.dataset = dataset_name
-        if dataset_name == 'NUAA-SIRST':
+        if dataset_name in ['NUAA-SIRST', 'DenseSIRST']:
             img_norm_cfg = dict(mean=101.06385040283203, std=34.619606018066406)
             jitter = 0.2
         elif dataset_name == 'NUDT-SIRST':
@@ -120,7 +120,7 @@ class TrainSetLoader(Dataset):
         elif self.dataset == 'DSAT':
             img_path = self.images+'/'+img_id   
             label_path = self.masks +'/'+img_id.replace('img/', '').replace('.jpg', self.suffix)
-        elif self.dataset == 'NUAA-SIRST':
+        elif self.dataset in ['NUAA-SIRST', 'DenseSIRST']:
             img_path = self.images+'/'+img_id+self.suffix   
             label_path = self.masks +'/'+img_id+'_pixels0'+self.suffix
         img = Image.open(img_path).convert('RGB')
@@ -157,7 +157,7 @@ class TestSetLoader(Dataset):
         self.crop_size = crop_size
         self.suffix    = suffix
         self.dataset = dataset_name
-        if dataset_name == 'NUAA-SIRST':
+        if dataset_name in ['NUAA-SIRST', 'DenseSIRST']:
             img_norm_cfg = dict(mean=101.06385040283203, std=34.619606018066406)
             jitter = 0.2
         elif dataset_name == 'NUDT-SIRST':
@@ -191,7 +191,7 @@ class TestSetLoader(Dataset):
         elif self.dataset == 'DSAT':
             img_path   = self.images+'/'+img_id   # img_id的数值正好补了self._image_path在上面定义的2个空
             label_path = self.masks +'/'+img_id.replace('img/', '').replace('.jpg', self.suffix)
-        elif self.dataset == 'NUAA-SIRST':
+        elif self.dataset in ['NUAA-SIRST', 'DenseSIRST']:
             img_path = self.images + '/' + img_id + self.suffix  # img_id的数值正好补了self._image_path在上面定义的2个空
             label_path = self.masks + '/' + img_id + '_pixels0' + self.suffix
         img  = Image.open(img_path).convert('RGB')  ##由于输入的三通道、单通道图像都有，所以统一转成RGB的三通道，这也符合Unet等网络的期待尺寸
