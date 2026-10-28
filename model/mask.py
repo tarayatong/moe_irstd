@@ -1,5 +1,7 @@
-import math
+"""旧路由接口与实验变体；主路径由 sfaoe.routing 实现。"""
 
+from sfaoe.routing import Expert, SpatialNoisyTopkRouter, SpatialSparseMoE
+import math
 import torch
 import torch.nn as nn
 import numpy as np
@@ -8,112 +10,110 @@ from torch.autograd import Variable
 
 
 class GumbelSoftmax(nn.Module):
-    '''
-        gumbel softmax gate.
-    '''
+    """
+    gumbel softmax gate.
+    """
+
     def __init__(self, eps=1):
         super(GumbelSoftmax, self).__init__()
         self.eps = eps
         self.sigmoid = nn.Sigmoid()
-    
-    def gumbel_sample(self, template_tensor, eps=1e-8):
+
+    def gumbel_sample(self, template_tensor, eps=1e-08):
         uniform_samples_tensor = template_tensor.clone().uniform_()
-        gumble_samples_tensor = torch.log(uniform_samples_tensor+eps)-torch.log(
-                                          1-uniform_samples_tensor+eps)
+        gumble_samples_tensor = torch.log(uniform_samples_tensor + eps) - torch.log(
+            1 - uniform_samples_tensor + eps
+        )
         return gumble_samples_tensor
-    
+
     def gumbel_softmax(self, logits):
-        """ Draw a sample from the Gumbel-Softmax distribution"""
+        """Draw a sample from the Gumbel-Softmax distribution"""
         gsamples = self.gumbel_sample(logits.data)
         logits = logits + Variable(gsamples)
         soft_samples = self.sigmoid(logits / self.eps)
-        return soft_samples, logits
-    
+        return (soft_samples, logits)
+
     def forward(self, logits):
         if not self.training:
-            out_hard = (logits>=0).float()
+            out_hard = (logits >= 0).float()
             return out_hard
-        out_soft, prob_soft = self.gumbel_softmax(logits)
+        (out_soft, prob_soft) = self.gumbel_softmax(logits)
         out_hard = ((out_soft >= 0.5).float() - out_soft).detach() + out_soft
         return out_hard
 
 
 class Mask_s(nn.Module):
-    '''
-        Attention Mask spatial.
-    '''
-    def __init__(self, h, w, planes, block_w, block_h, eps=0.66667,
-                 bias=-1, **kwargs):
+    """
+    Attention Mask spatial.
+    """
+
+    def __init__(self, h, w, planes, block_w, block_h, eps=0.66667, bias=-1, **kwargs):
         super(Mask_s, self).__init__()
-        # Parameter
-        self.width, self.height, self.channel = w, h, planes
-        self.mask_h, self.mask_w = int(np.ceil(h / block_h)), int(np.ceil(w / block_w))
-        self.eleNum_s = torch.Tensor([self.mask_h*self.mask_w])
-        # spatial attention
-        self.atten_s = nn.Conv2d(planes, 1, kernel_size=3, stride=1, bias=bias>=0, padding=1)
-        if bias>=0:
+        (self.width, self.height, self.channel) = (w, h, planes)
+        (self.mask_h, self.mask_w) = (
+            int(np.ceil(h / block_h)),
+            int(np.ceil(w / block_w)),
+        )
+        self.eleNum_s = torch.Tensor([self.mask_h * self.mask_w])
+        self.atten_s = nn.Conv2d(
+            planes, 1, kernel_size=3, stride=1, bias=bias >= 0, padding=1
+        )
+        if bias >= 0:
             nn.init.constant_(self.atten_s.bias, bias)
-        # Gate
         self.gate_s = GumbelSoftmax(eps=eps)
-        # Norm
-        self.norm = lambda x: torch.norm(x, p=1, dim=(1,2,3))
-    
+        self.norm = lambda x: torch.norm(x, p=1, dim=(1, 2, 3))
+
     def forward(self, x):
-        batch, channel, height, width = x.size()
-        # Pooling
-        input_ds = F.adaptive_avg_pool2d(input=x, output_size=(self.mask_h, self.mask_w))
-        # spatial attention
-        s_in = self.atten_s(input_ds) # [N, 1, h, w]
-        # spatial gate
-        mask_s = self.gate_s(s_in) # [N, 1, h, w]
-        # norm
+        (batch, channel, height, width) = x.size()
+        input_ds = F.adaptive_avg_pool2d(
+            input=x, output_size=(self.mask_h, self.mask_w)
+        )
+        s_in = self.atten_s(input_ds)
+        mask_s = self.gate_s(s_in)
         norm = self.norm(mask_s)
         norm_t = self.eleNum_s.to(x.device)
-        return mask_s, norm, norm_t
-    
+        return (mask_s, norm, norm_t)
+
     def get_flops(self):
         flops = self.mask_h * self.mask_w * self.channel * 9
         return flops
 
 
 class Mask_c(nn.Module):
-    '''
-        Attention Mask.
-    '''
-    def __init__(self, inplanes, outplanes, fc_reduction=4, eps=0.66667, bias=-1, **kwargs):
+    """
+    Attention Mask.
+    """
+
+    def __init__(
+        self, inplanes, outplanes, fc_reduction=4, eps=0.66667, bias=-1, **kwargs
+    ):
         super(Mask_c, self).__init__()
-        # Parameter
-        self.bottleneck = inplanes // fc_reduction 
-        self.inplanes, self.outplanes = inplanes, outplanes
+        self.bottleneck = inplanes // fc_reduction
+        (self.inplanes, self.outplanes) = (inplanes, outplanes)
         self.eleNum_c = torch.Tensor([outplanes])
-        # channel attention
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.atten_c = nn.Sequential(
             nn.Conv2d(inplanes, self.bottleneck, kernel_size=1, stride=1, bias=False),
             nn.BatchNorm2d(self.bottleneck),
             nn.ReLU(inplace=True),
-            nn.Conv2d(self.bottleneck, outplanes, kernel_size=1, stride=1, bias=bias>=0),
+            nn.Conv2d(
+                self.bottleneck, outplanes, kernel_size=1, stride=1, bias=bias >= 0
+            ),
         )
-        if bias>=0:
-            # self.atten_c[3].bias.data = self.atten_c[3].bias.data.cuda()
+        if bias >= 0:
             nn.init.constant_(self.atten_c[3].bias, bias)
-        # Gate
         self.gate_c = GumbelSoftmax(eps=eps)
-        # Norm
-        self.norm = lambda x: torch.norm(x, p=1, dim=(1,2,3))
-    
+        self.norm = lambda x: torch.norm(x, p=1, dim=(1, 2, 3))
+
     def forward(self, x):
-        batch, channel, _, _ = x.size()
-        context = self.avg_pool(x) # [N, C, 1, 1] 
-        # transform
-        c_in = self.atten_c(context) # [N, C_out, 1, 1]
-        # channel gate
-        mask_c = self.gate_c(c_in) # [N, C_out, 1, 1]
-        # norm
+        (batch, channel, _, _) = x.size()
+        context = self.avg_pool(x)
+        c_in = self.atten_c(context)
+        mask_c = self.gate_c(c_in)
         norm = self.norm(mask_c)
         norm_t = self.eleNum_c.to(x.device)
-        return mask_c, int(norm.mean().item()), int(norm_t.mean().item())
-    
+        return (mask_c, int(norm.mean().item()), int(norm_t.mean().item()))
+
     def get_flops(self):
         flops = self.inplanes * self.bottleneck + self.bottleneck * self.outplanes
         return flops
@@ -125,95 +125,60 @@ class Sequential_DG(nn.Sequential):
         self._module_num = len(layers)
 
     def forward(self, input):
-        x, mask_c = input
+        (x, mask_c) = input
         i = 0
         for module in self._modules.values():
-            if i == self._module_num-1:
+            if i == self._module_num - 1:
                 x = x * mask_c
             x = module(x)
         i += 1
         return x
-    
+
 
 class NoisyTopkRouter(nn.Module):
     def __init__(self, n_embed, num_experts, top_k):
         super(NoisyTopkRouter, self).__init__()
         self.top_k = top_k
         self.topkroute_linear = nn.Linear(n_embed, num_experts)
-        # add noise
-        self.noise_linear =nn.Linear(n_embed, num_experts)
+        self.noise_linear = nn.Linear(n_embed, num_experts)
 
-    
     def forward(self, mh_output):
-        # mh_ouput is the output tensor from multihead self attention block
         logits = self.topkroute_linear(mh_output)
-
-        #Noise logits
         noise_logits = self.noise_linear(mh_output)
-
-        #Adding scaled unit gaussian noise to the logits
-        noise = torch.randn_like(logits)*F.softplus(noise_logits)
-        noisy_logits = logits + noise*0.2
-
-        top_k_logits, indices = noisy_logits.topk(self.top_k, dim=-1)
-        zeros = torch.full_like(noisy_logits, float('-inf'))
+        noise = torch.randn_like(logits) * F.softplus(noise_logits)
+        noisy_logits = logits + noise * 0.2
+        (top_k_logits, indices) = noisy_logits.topk(self.top_k, dim=-1)
+        zeros = torch.full_like(noisy_logits, float("-inf"))
         sparse_logits = zeros.scatter(-1, indices, top_k_logits)
         router_output = F.softmax(sparse_logits, dim=-1)
-        return router_output, indices
+        return (router_output, indices)
 
-class Expert(nn.Module):
-    def __init__(self, n_embd, out_channels):
-        super().__init__()
-        self.net = nn.Sequential(
-            # nn.Linear(n_embd, 2 * n_embd),
-            # nn.ReLU(),
-            nn.Conv2d(n_embd, out_channels, 3, 1, 1),
-            nn.Dropout(0.1),
-        )
-    def forward(self, x):
-        return self.net(x)
 
 class SparseMoE(nn.Module):
     def __init__(self, n_embed, num_experts, top_k, out_channels):
         super(SparseMoE, self).__init__()
         self.output_dim = out_channels
         self.router = NoisyTopkRouter(n_embed, num_experts, top_k)
-        self.experts = nn.ModuleList([Expert(n_embed, out_channels) for _ in range(num_experts)])
+        self.experts = nn.ModuleList(
+            [Expert(n_embed, out_channels) for _ in range(num_experts)]
+        )
         self.top_k = top_k
 
     def forward(self, x):
-        batch_size, seq_len, input_dim = x.size()
-        # 1. 输入进入router得到两个输出
-        gating_output, indices = self.router(x)
-        # 2.初始化全零矩阵，后续叠加为最终结果
-        # final_output = torch.zeros_like(x)
+        (batch_size, seq_len, input_dim) = x.size()
+        (gating_output, indices) = self.router(x)
         final_output = torch.zeros(batch_size, seq_len, self.output_dim).to(x.device)
-
-        # 3.展平，即把每个batch拼接到一起，这里对输入x和router后的结果都进行了展平
         flat_x = x.reshape(-1, x.size(-1))
         flat_gating_output = gating_output.view(-1, gating_output.size(-1))
-
-        # 以每个专家为单位进行操作，即把当前专家处理的所有token都进行加权
         for i, expert in enumerate(self.experts):
-            # 4. 对当前的专家(例如专家0)来说，查看其对所有tokens中哪些在前top2
             expert_mask = (indices == i).any(dim=-1)
-            # 5. 展平操作
             flat_mask = expert_mask.view(-1)
-            # 如果当前专家是任意一个token的前top2
             if flat_mask.any():
-                # 6. 得到该专家对哪几个token起作用后，选取token的维度表示
                 expert_input = flat_x[flat_mask]
-                # 7. 将token输入expert得到输出
                 expert_output = expert(expert_input)
-
-                # 8. 计算当前专家对于有作用的token的权重分数
                 gating_scores = flat_gating_output[flat_mask, i].unsqueeze(1)
-                # 9. 将expert输出乘上权重分数
                 weighted_output = expert_output * gating_scores
-
-                # 10. 循环进行做种的结果叠加
                 final_output[expert_mask] += weighted_output.squeeze(1)
-
         return final_output
 
 
@@ -223,137 +188,70 @@ class MoELinearLayer(nn.Module):
         self.moe = SparseMoE(in_channels, num_experts, top_k, out_channels)
 
     def forward(self, x):
-        batch_size, in_channels, height, width = x.size()   #[1, 64, 16, 16])
-        # 调整维度以适应MoE层：(batch_size, height * width, in_channels)
-        x_flat = x.permute(0, 2, 3, 1).reshape(batch_size, -1, in_channels) # [1, 256, 64]
-        # 应用MoE变换
+        (batch_size, in_channels, height, width) = x.size()
+        x_flat = x.permute(0, 2, 3, 1).reshape(batch_size, -1, in_channels)
         x_transformed = self.moe(x_flat)
-        # 调整回原始形状：(batch_size, out_channels, height, width)
         x_out = x_transformed.view(batch_size, height, width, -1).permute(0, 3, 1, 2)
         return x_out
 
 
 class ChannelRouter(nn.Module):
-    def __init__(self, in_channels, num_experts, top_k, out_channels, experts=None,):
+    def __init__(self, in_channels, num_experts, top_k, out_channels, experts=None):
         super(ChannelRouter, self).__init__()
         self.in_channels = in_channels
         self.num_experts = num_experts
         self.topk = top_k
-
-        # 用一个轻量MLP或者1x1卷积映射通道权重到专家选择概率
-        self.routing_layer = nn.Conv2d(in_channels, in_channels * num_experts, kernel_size=1, groups=in_channels)
+        self.routing_layer = nn.Conv2d(
+            in_channels, in_channels * num_experts, kernel_size=1, groups=in_channels
+        )
         self.experts = experts
 
     def forward(self, x):
-        B, C, H, W = x.shape
-        
-        # 路由得分：[B, C, num_experts]
-        raw_scores = self.routing_layer(x).view(B, self.num_experts, C, H, W).mean(dim=[3, 4])  # [B, num_experts, C]
-        raw_scores = raw_scores.permute(0, 2, 1)  # [B, C, num_experts]
-        if self.topk>0:
-            # 只保留 top-k（在 experts 维度上）
+        (B, C, H, W) = x.shape
+        raw_scores = (
+            self.routing_layer(x).view(B, self.num_experts, C, H, W).mean(dim=[3, 4])
+        )
+        raw_scores = raw_scores.permute(0, 2, 1)
+        if self.topk > 0:
             topk_mask = torch.zeros_like(raw_scores)
-            topk_idx = torch.topk(raw_scores, self.topk, dim=-1).indices  # [B, C, topk]
-
-            # 用 one-hot 掩码保留 top-k 项
-            topk_mask.scatter_(-1, topk_idx, raw_scores.gather(-1, topk_idx))  # 其余位置为0
+            topk_idx = torch.topk(raw_scores, self.topk, dim=-1).indices
+            topk_mask.scatter_(-1, topk_idx, raw_scores.gather(-1, topk_idx))
             final_output = torch.zeros_like(x)
-
-            # 每个专家处理整张特征图
-            # expert_outputs = []
             for i, expert in enumerate(self.experts):
                 weight = topk_mask[:, :, i].unsqueeze(-1).unsqueeze(-1)
-
-                out = expert(x)  # [B, C, H, W]
-                # 路由掩码 [B, C] -> [B, C, 1, 1]
+                out = expert(x)
                 final_output += out * weight
         else:
             final_output = torch.zeros_like(x)
             for i, expert in enumerate(self.experts):
                 weight = raw_scores[:, :, i].unsqueeze(-1).unsqueeze(-1)
-                out = expert(x)  # [B, C, H, W]
+                out = expert(x)
                 final_output += out * weight
-        return final_output  # [B, C, H, W]
-    
+        return final_output
+
+
 class GroupedChannelSelection(nn.Module):
     def __init__(self, in_channels, out_channles, groups=8):
         super().__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels, out_channles, kernel_size=1, bias=False),
             nn.BatchNorm2d(out_channles),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
         self.groups = groups
         channels_per_group = out_channles // groups
         self.group_selection = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(out_channles, groups, 1),
-            nn.Sigmoid()
+            nn.AdaptiveAvgPool2d(1), nn.Conv2d(out_channles, groups, 1), nn.Sigmoid()
         )
-        
+
     def forward(self, x):
         x = self.conv(x)
-        group_weights = self.group_selection(x)  # [B, groups, 1, 1]
-        # 扩展到所有通道
+        group_weights = self.group_selection(x)
         channel_weights = group_weights.repeat_interleave(
             x.size(1) // self.groups, dim=1
         )
-
         return channel_weights
-    
 
-class SpatialNoisyTopkRouter(nn.Module):
-    """Spatial top-k router that can operate at *region* (patch) granularity.
-
-    When ``patch_size == 1`` (default) the router is exactly pixel-wise and
-    behaves identically to the previous implementation.  When ``patch_size > 1``
-    the router map is computed on a down-sampled feature of size
-    ``(ceil(H / p), ceil(W / p))``, the top-k assignment is made per patch, and
-    the resulting ``indices`` / ``router_output`` maps are nearest-neighbor
-    upsampled back to ``(H, W)`` so that all pixels inside a patch share the
-    same expert selection.  This is the region-based routing variant used in
-    the ablation requested by the reviewer.
-    """
-
-    def __init__(self, in_channels, num_experts, top_k, noise_scale=0.2, patch_size=1):
-        super().__init__()
-        self.top_k = top_k
-        self.num_experts = num_experts
-        self.noise_scale = noise_scale
-        self.patch_size = max(int(patch_size), 1)
-        self.topkroute_conv = nn.Conv2d(in_channels, num_experts, kernel_size=1)
-        self.noise_conv = nn.Conv2d(in_channels, num_experts, kernel_size=1)
-
-    def forward(self, x):
-        B, _, H, W = x.shape
-        p = self.patch_size
-
-        if p > 1:
-            Hp = max(1, int(math.ceil(H / p)))
-            Wp = max(1, int(math.ceil(W / p)))
-            x_routing = F.adaptive_avg_pool2d(x, output_size=(Hp, Wp))
-        else:
-            x_routing = x
-
-        logits = self.topkroute_conv(x_routing)  # [B, E, Hp, Wp]
-        if self.training and self.noise_scale > 0:
-            noise_logits = self.noise_conv(x_routing)
-            noise = torch.randn_like(logits) * F.softplus(noise_logits)
-            noisy_logits = logits + noise * self.noise_scale
-        else:
-            noisy_logits = logits
-
-        top_k_logits, indices = noisy_logits.topk(self.top_k, dim=1)  # [B, topk, Hp, Wp]
-
-        zeros = torch.full_like(noisy_logits, float('-inf'))
-        sparse_logits = zeros.scatter(1, indices, top_k_logits)
-        router_output = F.softmax(sparse_logits, dim=1)  # [B, E, Hp, Wp]
-
-        if p > 1:
-            router_output = F.interpolate(router_output, size=(H, W), mode='nearest')
-            indices = F.interpolate(indices.float(), size=(H, W), mode='nearest').long()
-
-        return router_output, indices
 
 class SpatialExpert(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -361,175 +259,20 @@ class SpatialExpert(nn.Module):
         self.net = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=1),
             nn.BatchNorm2d(out_channels),
-            nn.Dropout2d(0.1)
+            nn.Dropout2d(0.1),
         )
-    
+
     def forward(self, x):
         return self.net(x)
-
-
-class SpatialSparseMoE(nn.Module):
-    """Sparse MoE with optional region-based (patch-wise) spatial routing.
-
-    The ``patch_size`` argument controls the granularity of expert selection:
-    ``patch_size=1`` recovers the original pixel-wise routing, while
-    ``patch_size>1`` partitions the spatial map into non-overlapping
-    ``patch_size x patch_size`` regions and assigns one expert combination per
-    region, reducing the router FLOPs from O(H*W*C*E) to O((H/p)*(W/p)*C*E).
-
-    Routing is *sparse* by construction: ``router`` selects the top-k experts
-    per (region) location and forms ``gating_output`` via softmax on the
-    masked logits, so non-selected positions contribute exactly zero -- there
-    is no dense weighted fusion.
-
-    Auxiliary load-balancing loss (Switch Transformer style) is exposed via
-    ``self.last_aux_loss`` after every forward call when ``self.training``
-    is True.  The trainer is responsible for collecting and adding it to the
-    main objective with a coefficient.
-
-    **Expert input routing** (``input_routing``):
-
-    * ``"full"`` (V-MoE style, default): every expert receives the **full**
-      feature map ``x``; only the **output** is made sparse by multiplying
-      with the hard top-k gating tensor.  This avoids zero-hole artifacts
-      from convs seeing masked inputs while keeping per-pixel sparse
-      combinations.
-
-    * ``"sparse"`` (legacy): zero out pixels that do not route to expert
-      ``i`` before ``expert_i(x)``.  Identical to the original implementation;
-      retained for ablation / checkpoint compatibility.
-    """
-
-    def __init__(self, n_embed, num_experts, top_k, out_channels, experts=None,
-                 noise_scale=0.2, patch_size=1, input_routing='full'):
-        super(SpatialSparseMoE, self).__init__()
-        ir = str(input_routing).lower()
-        if ir not in ('full', 'sparse'):
-            raise ValueError("input_routing must be 'full' (V-MoE) or 'sparse' (legacy), "
-                             f"got {input_routing!r}")
-        self.input_routing = ir
-        self.patch_size = max(int(patch_size), 1)
-        self.router = SpatialNoisyTopkRouter(n_embed, num_experts, top_k,
-                                             noise_scale=noise_scale,
-                                             patch_size=self.patch_size)
-        self.experts = nn.ModuleList([Expert(n_embed, out_channels) for _ in range(num_experts)]) if experts is None else experts
-        self.top_k = top_k
-        self.num_experts = num_experts
-        self.record_routing = None  # None, 'full', or 'lite'
-        self.last_routing_stats = None
-        self.last_aux_loss = None
-
-    def _compute_aux_loss(self, gating_output, indices):
-        """Switch-style auxiliary load-balancing loss.
-
-        Args:
-            gating_output: [B, E, H, W] softmax probabilities (sum to 1 over E).
-            indices:       [B, topk, H, W] hard top-k expert assignments.
-
-        At uniform routing this loss equals 1; at full collapse it equals E,
-        so adding it with a small weight (e.g. 1e-2) discourages winner-take-
-        all behaviour while flowing gradients through ``gating_output``.
-        """
-        E = self.num_experts
-        # f_i: fraction of routing decisions assigned to expert i.
-        # one_hot: [B, topk, H, W, E] -> sum over topk -> [B, H, W, E]
-        one_hot = F.one_hot(indices, num_classes=E).float()
-        f = one_hot.sum(dim=1).mean(dim=(0, 1, 2))  # [E], sums to topk
-        # P_i: mean softmax probability for expert i (differentiable).
-        # gating_output: [B, E, H, W] -> mean over B, H, W -> [E]
-        P = gating_output.mean(dim=(0, 2, 3))  # [E], sums to 1
-        aux = E * (f * P).sum() / max(self.top_k, 1)
-        return aux
-
-    def _accumulate_experts_vmoe_full_input(self, x, gating_output, final_output):
-        """V-MoE: full-map forward per expert, sparse combination via gating only."""
-        _, C, _, _ = x.shape
-        for i, expert in enumerate(self.experts):
-            expert_weights = gating_output[:, i : i + 1]  # [B, 1, H, W]
-            if not expert_weights.any():
-                continue
-            expert_output = expert(x)
-            final_output = final_output + expert_output * expert_weights.expand(
-                -1, C, -1, -1
-            )
-        return final_output
-
-    def _accumulate_experts_legacy_masked_input(self, x, gating_output, indices, final_output):
-        """Original path: mask the input to each expert by routed pixels (legacy)."""
-        for i, expert in enumerate(self.experts):
-            expert_mask = (indices == i).any(dim=1)  # [B, H, W]
-            expert_mask = expert_mask.unsqueeze(1).expand_as(x)
-
-            if expert_mask.any():
-                expert_input = torch.where(expert_mask, x, torch.zeros_like(x))
-                expert_output = expert(expert_input)
-                expert_weights = gating_output[:, i : i + 1].expand(-1, x.size(1), -1, -1)
-                final_output = final_output + expert_output * expert_weights
-        return final_output
-
-    def forward(self, x):
-        B, C, H, W = x.shape
-        gating_output, indices = self.router(x) # [B, E, H, W], [B, topk, H, W]
-        final_output = torch.zeros_like(x)
-
-        if self.input_routing == 'full':
-            final_output = self._accumulate_experts_vmoe_full_input(
-                x, gating_output, final_output
-            )
-        else:
-            final_output = self._accumulate_experts_legacy_masked_input(
-                x, gating_output, indices, final_output
-            )
-
-        # Compute auxiliary load-balancing loss only during training so eval
-        # / inference keeps the original cost.
-        if self.training:
-            self.last_aux_loss = self._compute_aux_loss(gating_output, indices)
-        else:
-            self.last_aux_loss = None
-
-        if self.record_routing:
-            with torch.no_grad():
-                # For region routing the meaningful unit of a routing decision
-                # is one patch, so we down-sample before computing entropy/load
-                # statistics to avoid double counting identical neighbours.
-                if self.patch_size > 1:
-                    Hp = max(1, int(math.ceil(H / self.patch_size)))
-                    Wp = max(1, int(math.ceil(W / self.patch_size)))
-                    prob = F.adaptive_avg_pool2d(gating_output.detach(),
-                                                 output_size=(Hp, Wp))
-                    idx_ds = F.adaptive_max_pool2d(indices.float(),
-                                                   output_size=(Hp, Wp)).long()
-                else:
-                    prob = gating_output.detach()
-                    idx_ds = indices
-
-                entropy = -(prob * (prob + 1e-8).log()).sum(dim=1).mean()
-                load = torch.zeros(self.num_experts, device=x.device)
-                for ei in range(self.num_experts):
-                    load[ei] = (idx_ds == ei).any(dim=1).float().mean()
-                stats = {
-                    'entropy': entropy.item(),
-                    'load': load.cpu(),
-                    'patch_size': self.patch_size,
-                }
-                if self.record_routing == 'full':
-                    stats['indices'] = idx_ds.cpu()
-                    stats['gating'] = prob.cpu()
-                self.last_routing_stats = stats
-
-        return final_output
 
 
 class SpatialSparse(nn.Module):
     def __init__(self, in_channels, num_experts, top_k, out_channels, experts=None):
         super().__init__()
-        # self.router = SpatialNoisyTopkRouter(in_channels, num_experts, top_k)
-        if experts==None:
-            self.experts = nn.ModuleList([
-            SpatialExpert(in_channels, out_channels) 
-            for _ in range(num_experts)
-        ])
+        if experts == None:
+            self.experts = nn.ModuleList(
+                [SpatialExpert(in_channels, out_channels) for _ in range(num_experts)]
+            )
         else:
             self.experts = experts
         self.top_k = top_k
@@ -537,50 +280,35 @@ class SpatialSparse(nn.Module):
         self.out_channels = out_channels
         self.router = nn.Parameter(torch.rand(in_channels, num_experts))
         self.gumble_softmax = GumbelSoftmax()
-    
+
     def forward(self, x):
-        # x: [batch_size, in_channels, height, width]
-        # print(self.router[:5])
-        B, C, H, W = x.shape
-        
-        # routing_weights, indices = self.router(x)  # [B, C, num_experts]
-        # routing_weights = F.softmax(self.router, dim=-1)
+        (B, C, H, W) = x.shape
         routing_weights = self.gumble_softmax(self.router)
         routing_weights = routing_weights.unsqueeze(0).expand(B, C, self.num_experts)
-        
         final_output = torch.zeros(B, self.out_channels, H, W, device=x.device)
-        
         for i, expert in enumerate(self.experts):
-            expert_mask = routing_weights[:,:,i]
-            # 5. 展平操作
-            # expand_mask = expert_mask.unsqueeze(-1).unsqueeze(-1).expand(B,C,H,W)
-
+            expert_mask = routing_weights[:, :, i]
             masked_input = x * expert_mask.unsqueeze(-1).unsqueeze(-1)
-                # 7. 将token输入expert得到输出
             expert_output = expert(masked_input)
-
             final_output = final_output + expert_output
-            
         return final_output
 
+
 class SpatialMoELayer(nn.Module):
-    def __init__(self, in_channels, out_channels, num_experts, top_k, input_routing='full'):
+    def __init__(
+        self, in_channels, out_channels, num_experts, top_k, input_routing="full"
+    ):
         super().__init__()
         self.moe = SpatialSparseMoE(
             in_channels, num_experts, top_k, out_channels, input_routing=input_routing
         )
-    
+
     def forward(self, x):
-        # x: [batch_size, in_channels, height, width]
         return self.moe(x)
 
 
-
 def test_moe_linear_layer():
-    # 设置随机种子以确保可重复性
     torch.manual_seed(42)
-    
-    # 测试参数
     batch_size = 2
     in_channels = 64
     height = 32
@@ -588,66 +316,43 @@ def test_moe_linear_layer():
     out_channels = 128
     num_experts = 4
     top_k = 2
-    
-    # 创建模型
     model = MoELinearLayer(in_channels, out_channels, num_experts, top_k)
-    
-    # 创建输入tensor
     x = torch.randn(batch_size, in_channels, height, width)
-    
-    # 运行前向传播
     output = model(x)
-    
-    # 测试输出形状
     expected_shape = (batch_size, out_channels, height, width)
-    assert output.shape == expected_shape, \
+    assert output.shape == expected_shape, (
         f"输出形状错误: 期望 {expected_shape}, 得到 {output.shape}"
-    
-    # 测试输出值是否在合理范围内
+    )
     assert not torch.isnan(output).any(), "输出包含 NaN 值"
     assert not torch.isinf(output).any(), "输出包含 Inf 值"
-    
-    # 测试梯度
     output.sum().backward()
     for param in model.parameters():
         assert param.grad is not None, "某些参数没有梯度"
         assert not torch.isnan(param.grad).any(), "梯度包含 NaN 值"
         assert not torch.isinf(param.grad).any(), "梯度包含 Inf 值"
-    
     print("基本功能测试通过")
-    
-    # 测试不同输入尺寸
-    test_sizes = [
-        (1, 64, 16, 16),
-        (4, 64, 64, 64),
-        (8, 64, 8, 8)
-    ]
-    
+    test_sizes = [(1, 64, 16, 16), (4, 64, 64, 64), (8, 64, 8, 8)]
     for size in test_sizes:
         x = torch.randn(*size)
         output = model(x)
         expected_shape = (size[0], out_channels, size[2], size[3])
-        assert output.shape == expected_shape, \
+        assert output.shape == expected_shape, (
             f"输入尺寸 {size} 测试失败: 期望输出形状 {expected_shape}, 得到 {output.shape}"
-    
+        )
     print("不同输入尺寸测试通过")
-    
-    # 测试设备兼容性
     if torch.cuda.is_available():
         model = model.cuda()
         x = torch.randn(batch_size, in_channels, height, width).cuda()
         output = model(x)
         assert output.device.type == "cuda", "GPU 测试失败"
         print("GPU 兼容性测试通过")
-    
-    # 测试模型行为一致性
     model.eval()
     with torch.no_grad():
         output1 = model(x)
         output2 = model(x)
         assert torch.allclose(output1, output2), "模型输出不一致"
-    
     print("行为一致性测试通过")
+
 
 def test_spatial_moe():
     batch_size = 2
@@ -657,30 +362,15 @@ def test_spatial_moe():
     width = 32
     num_experts = 4
     top_k = 2
-    
-    # 创建模型
     model = SpatialMoELayer(in_channels, out_channels, num_experts, top_k)
-    
-    # 创建输入
     x = torch.randn(batch_size, in_channels, height, width)
-    
-    # 前向传播
     output = model(x)
-    
-    # 检查输出形状
     expected_shape = (batch_size, out_channels, height, width)
     assert output.shape == expected_shape
-    
     print(f"输入形状: {x.shape}")
     print(f"输出形状: {output.shape}")
     print("测试通过!")
 
+
 if __name__ == "__main__":
     test_spatial_moe()
-    # try:
-    #     test_moe_linear_layer()
-    #     print("所有测试通过！")
-    # except AssertionError as e:
-    #     print(f"测试失败: {str(e)}")
-    # except Exception as e:
-    #     print(f"发生错误: {str(e)}")

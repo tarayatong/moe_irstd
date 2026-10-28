@@ -65,11 +65,20 @@ def load_all_snapshots(routing_dir):
 
 
 def routing_alpha_from_path(routing_dir):
-    """Parse α from .../routing_alpha_<float>."""
+    """Parse α from .../routing_alpha_<float>, allowing suffixes such as _p1."""
     base = os.path.basename(routing_dir.rstrip('/'))
-    if not base.startswith('routing_alpha_'):
+    m = re.match(r'^routing_alpha_([0-9]+(?:\.[0-9]+)?)(?:_|$)', base)
+    if not m:
         return None
-    return float(base.split('_')[-1])
+    return float(m.group(1))
+
+
+def routing_alpha_tag(routing_dir):
+    alpha = routing_alpha_from_path(routing_dir)
+    if alpha is not None:
+        return f'{alpha:g}'
+    m = re.search(r'routing_alpha_([^/\\]+)', routing_dir.rstrip('/'))
+    return m.group(1) if m else routing_dir.rstrip('/').split('_')[-1]
 
 
 def discover_routing_dirs_from_run_roots(run_roots):
@@ -97,7 +106,7 @@ def discover_routing_dirs_from_run_roots(run_roots):
 
 def expert_display_names(num_experts):
     """Expert index → display name (0 高频, 1 低频, 2 local, 3 identity)."""
-    known = ['高频专家', '低频专家', 'local专家', 'identity']
+    known = ['High-frequency', 'Low-frequency', 'Local', 'Identity']
     names = [known[i] if i < len(known) else f'Expert {i}' for i in range(num_experts)]
     return names
 
@@ -556,21 +565,52 @@ def plot_expert_loads(routing_dir, save_path=None):
         plt.show()
 
 
-def plot_expert_loads_grid(routing_dirs, save_path=None, ncols=4):
+def _plot_entropy_compare_panel(ax, routing_dirs, xlim=(-35, 1035)):
+    """Draw the first panel from plot_compare: mean router entropy by alpha."""
+    for routing_dir in routing_dirs:
+        snapshots = load_all_snapshots(routing_dir)
+        if not snapshots:
+            print(f"Warning: no routing_epoch_*.pt in {routing_dir}, skipped")
+            continue
+
+        epochs = [s['epoch'] for s in snapshots]
+        num_modules = len(snapshots[0]['modules'])
+        avg_entropies = [
+            np.mean([s['modules'][mi]['entropy'] for mi in range(num_modules)])
+            for s in snapshots
+        ]
+        ax.plot(epochs, avg_entropies, marker='o', markersize=2, linewidth=1.3,
+                label=f'α={routing_alpha_tag(routing_dir)}')
+
+    ax.set_xlim(*xlim)
+    ax.set_xlabel('Epoch', fontsize=9)
+    ax.set_ylabel('Mean entropy', fontsize=9)
+    ax.set_title('Mean router entropy by α', fontsize=11, fontweight='bold')
+    ax.grid(True, alpha=0.35)
+    ax.set_facecolor('#f5f7fb')
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.2)
+        spine.set_edgecolor('#3b5b92')
+    ax.legend(fontsize=6.5, loc='upper right', frameon=True)
+
+
+def plot_expert_loads_grid(routing_dirs, save_path=None, ncols=4,
+                           include_entropy_compare_first=False, xlim=(-35, 1035)):
     """One subplot per α: four expert load curves vs epoch (sorted by α)."""
     def _sort_key(d):
         a = routing_alpha_from_path(d)
         return (a is not None, a if a is not None else 0.0, d)
 
     routing_dirs = sorted(routing_dirs, key=_sort_key)
-    n = len(routing_dirs)
+    n_data = len(routing_dirs)
+    n = n_data + (1 if include_entropy_compare_first else 0)
     if n == 0:
         print('No routing directories to plot')
         return
 
     ncols = max(1, min(ncols, n))
     nrows = (n + ncols - 1) // ncols
-    fig, axes = plt.subplots(nrows, ncols, figsize=(3.8 * ncols, 3.2 * nrows), sharex=False, sharey=True)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(3.8 * ncols, 3.2 * nrows), sharex=False, sharey=False)
     if nrows * ncols == 1:
         axes = np.array([[axes]])
     elif nrows == 1:
@@ -579,11 +619,17 @@ def plot_expert_loads_grid(routing_dirs, save_path=None, ncols=4):
         axes = axes.reshape(-1, 1)
 
     first_ax_for_legend = None
-    for idx, routing_dir in enumerate(routing_dirs):
+    if include_entropy_compare_first:
+        _plot_entropy_compare_panel(axes[0, 0], routing_dirs, xlim=xlim)
+
+    expert_ylim_min = 1.0
+    expert_ylim_max = 0.0
+    expert_axes = []
+    for data_idx, routing_dir in enumerate(routing_dirs):
+        idx = data_idx + (1 if include_entropy_compare_first else 0)
         r, c = divmod(idx, ncols)
         ax = axes[r, c]
-        alpha = routing_alpha_from_path(routing_dir)
-        alpha_tag = f'{alpha:g}' if alpha is not None else routing_dir.rstrip('/').split('_')[-1]
+        alpha_tag = routing_alpha_tag(routing_dir)
 
         snapshots = load_all_snapshots(routing_dir)
         if not snapshots:
@@ -592,6 +638,8 @@ def plot_expert_loads_grid(routing_dirs, save_path=None, ncols=4):
             continue
 
         epochs, load_matrix = expert_load_curves_from_snapshots(snapshots)
+        expert_ylim_min = min(expert_ylim_min, float(np.nanmin(load_matrix)))
+        expert_ylim_max = max(expert_ylim_max, float(np.nanmax(load_matrix)))
         num_experts = load_matrix.shape[1]
         expert_names = expert_display_names(num_experts)
 
@@ -600,28 +648,35 @@ def plot_expert_loads_grid(routing_dirs, save_path=None, ncols=4):
                     label=expert_names[ei])
         if first_ax_for_legend is None:
             first_ax_for_legend = ax
+        expert_axes.append(ax)
+        ax.set_xlim(*xlim)
         ax.set_title(f'α={alpha_tag}', fontsize=11)
         ax.grid(True, alpha=0.3)
-        if c == 0:
+        if c == 0 or (include_entropy_compare_first and data_idx == 0):
             ax.set_ylabel('Expert load', fontsize=9)
+            ax.tick_params(axis='y', labelleft=True)
+        ax.set_xlabel('Epoch', fontsize=9)
+
+    if expert_axes:
+        y_pad = max(0.02, (expert_ylim_max - expert_ylim_min) * 0.08)
+        expert_ylim_bottom = max(0.0, np.floor((expert_ylim_min - y_pad) * 20.0) / 20.0)
+        expert_ylim_top = min(1.0, np.ceil((expert_ylim_max + y_pad) * 20.0) / 20.0)
+        expert_yticks = np.arange(expert_ylim_bottom, expert_ylim_top + 1e-9, 0.1)
+        for ax in expert_axes:
+            ax.set_ylim(expert_ylim_bottom, expert_ylim_top)
+            ax.set_yticks(expert_yticks)
 
     for idx in range(n, nrows * ncols):
         r, c = divmod(idx, ncols)
         axes[r, c].set_visible(False)
 
-    for c in range(ncols):
-        ax = axes[nrows - 1, c]
-        if ax.get_visible():
-            ax.set_xlabel('Epoch', fontsize=9)
-
     if first_ax_for_legend is not None:
         handles, labels = first_ax_for_legend.get_legend_handles_labels()
         if handles:
             fig.legend(handles, labels, loc='upper center', ncol=min(4, len(labels)),
-                       fontsize=9, bbox_to_anchor=(0.5, 1.0), frameon=True)
+                       fontsize=9, bbox_to_anchor=(0.5, 0.985), frameon=True)
 
-    fig.suptitle('Expert selection vs epoch (mean load over MoE layers)', fontsize=13, y=1.02)
-    plt.tight_layout(rect=[0, 0, 1, 0.94])
+    plt.tight_layout(rect=[0, 0, 1, 0.955])
     if save_path:
         plt.savefig(save_path, dpi=200, bbox_inches='tight')
         print(f"Saved to {save_path}")
@@ -642,7 +697,7 @@ def plot_compare(routing_dirs, save_path=None):
     routing_dirs = sorted(routing_dirs, key=_sort_key)
 
     for routing_dir in routing_dirs:
-        alpha_str = routing_dir.rstrip('/').split('_')[-1]
+        alpha_str = routing_alpha_tag(routing_dir)
         snapshots = load_all_snapshots(routing_dir)
         if not snapshots:
             print(f"Warning: no routing_epoch_*.pt in {routing_dir}, skipped")
@@ -837,6 +892,8 @@ if __name__ == '__main__':
                         help='Save path for the figure (if not set, shows interactively)')
     parser.add_argument('--expert_grid_ncols', type=int, default=4,
                         help='Number of columns in expert_loads_grid subplot layout')
+    parser.add_argument('--include_entropy_compare_first', action='store_true',
+                        help='expert_loads_grid: put the mean-entropy compare panel in the first subplot')
 
     # --- export mode (checkpoint + test loader) ---
     parser.add_argument('--checkpoint', type=str, default=None,
@@ -907,9 +964,11 @@ if __name__ == '__main__':
             routing_dirs = discover_routing_dirs_from_run_roots(args.run_roots)
             if not routing_dirs:
                 parser.error('No routing directories discovered from --run_roots')
-            plot_expert_loads_grid(routing_dirs, save_path=args.save, ncols=args.expert_grid_ncols)
+            plot_expert_loads_grid(routing_dirs, save_path=args.save, ncols=args.expert_grid_ncols,
+                                   include_entropy_compare_first=args.include_entropy_compare_first)
         elif args.routing_dirs:
-            plot_expert_loads_grid(args.routing_dirs, save_path=args.save, ncols=args.expert_grid_ncols)
+            plot_expert_loads_grid(args.routing_dirs, save_path=args.save, ncols=args.expert_grid_ncols,
+                                   include_entropy_compare_first=args.include_entropy_compare_first)
         else:
             parser.error('expert_loads_grid mode requires --routing_dirs or --run_roots')
     elif args.mode == 'compare':

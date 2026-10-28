@@ -22,19 +22,16 @@ class Trainer(object):
     def __init__(self, args):
         args.base_size = 256
         args.crop_size = 256
-        args.st_model = 'NUAA-SIRST_DNANet_16_04_2026_19_04_02_wDS'
-        args.model_dir = 'NUAA-SIRST_DNANet_16_04_2026_19_04_02_wDS/mIoU__DNANet_NUAA-SIRST_epoch.pth.tar'
+        args.st_model = args.st_model or ''
+        args.model_dir = args.model_dir or ''
+        if not args.st_model and args.model_dir:
+            args.st_model = args.model_dir.split('/')[0]
         args.model = 'DNANet'
-        args.dataset = 'NUAA-SIRST'
+        args.dataset = 'DenseSIRST'
         args.split_method = '50_50'
         args.backbone = 'resnet_18'
         args.test_batch_size = 1
         args.mode = 'TXT'
-        args.moe_stages = '1,1,1,1'
-        args.dilations = '1,2,2,3'
-        args.noise_scale = 0.0
-        args.moe_stages = [bool(int(x)) for x in args.moe_stages.split(',')]
-        args.dilations = [int(x) for x in args.dilations.split(',')]
 
         # Initial
         self.args  = args
@@ -68,7 +65,7 @@ class Trainer(object):
 
         # Choose and load model (this paper is finished by one GPU)
 
-        model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter, moe_stages=args.moe_stages, dilations=args.dilations)
+        model       = DNANet(num_classes=1,input_channels=args.in_channels, block=Res_CBAM_block, num_blocks=num_blocks, nb_filter=nb_filter, moe_stages=args.moe_stages, dilations=args.dilations, noise_scale=args.noise_scale, patch_size=args.patch_size, top_k=args.top_k, input_routing=args.input_routing)
 
         model           = model.cuda()
         model.apply(weights_init_xavier)
@@ -81,6 +78,9 @@ class Trainer(object):
         self.best_precision = [0,0,0,0,0,0,0,0,0,0,0]
 
         # Load trained model
+        if not args.model_dir:
+            raise ValueError('Please pass --model_dir with the checkpoint path under ./result, '
+                             'for example OpenSIRST-v2_DNANet_xxx_wDS/mIoU__DNANet_OpenSIRST-v2_epoch.pth.tar')
         checkpoint        = torch.load(result_dir + args.model_dir)
         self.model.load_state_dict(checkpoint['state_dict'], strict=False)
 

@@ -16,13 +16,13 @@ def parse_args():
 
 
     # data and pre-process
-    parser.add_argument('--dataset', type=str, default='NUDT-SIRST',
-                        help='dataset name: NUDT-SIRST, NUAA-SIRST, NUST-SIRST')
+    parser.add_argument('--dataset', type=str, default='OpenSIRST-v2',
+                        help='dataset name: NUDT-SIRST, NUAA-SIRST, NUST-SIRST, DenseSIRST, OpenSIRST-v2')
     parser.add_argument('--st_model', type=str, default='',
                         help='NUDT-SIRST_DNANet_31_07_2021_14_50_57_wDS,NUDT-SIRST_DNANet_31_07_2021_14_50_57_wDS,'
                              'NUAA-SIRST_DNANet_28_07_2021_05_21_33_wDS')
     parser.add_argument('--model_dir', type=str,
-                        default = 'NUDT-SIRST_DNANet_31_07_2021_14_50_57_wDS/mIoU__DNANet_NUDT-SIRST_epoch.pth.tar',
+                        default = '',
                         help    = 'NUDT-SIRST_DNANet_31_07_2021_14_50_57_wDS/mIoU__DNANet_NUDT-SIRST_epoch.pth.tar,'
                                   'NUAA-SIRST_DNANet_28_07_2021_05_21_33_wDS/mIoU__DNANet_NUAA-SIRST_epoch.pth.tar')
     parser.add_argument('--mode', type=str, default='TXT', help='mode name:  TXT, Ratio')
@@ -65,10 +65,25 @@ def parse_args():
                         help='which stages use MoE, e.g. 1,1,1,1 for all, 0,0,1,1 for low-res only')
     parser.add_argument('--dilations', type=str, default='1,2,2,3',
                         help='dilation rates for BasicRFB_a branches, e.g. 1,2,2,3')
+    parser.add_argument('--noise_scale', type=float, default=0.2,
+                        help='noise scale factor alpha for SpatialNoisyTopkRouter')
+    parser.add_argument('--patch_size', type=str, default='1',
+                        help='MoE routing granularity, e.g. "1" or "1,2,4,8"')
+    parser.add_argument('--top_k', type=int, default=2,
+                        help='Number of experts activated per routing location')
+    parser.add_argument('--input_routing', type=str, default='full',
+                        choices=['full', 'sparse'],
+                        help='Whether experts see the full feature map or masked sparse input')
 
     args = parser.parse_args()
     args.moe_stages = [bool(int(x)) for x in args.moe_stages.split(',')]
     args.dilations = [int(x) for x in args.dilations.split(',')]
+    if args.patch_size is None or args.patch_size == '':
+        args.patch_size = 1
+    elif ',' in args.patch_size:
+        args.patch_size = [int(x) for x in args.patch_size.split(',') if x.strip() != '']
+    else:
+        args.patch_size = int(args.patch_size)
 
     # the parser
     return args
