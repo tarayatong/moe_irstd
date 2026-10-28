@@ -209,6 +209,7 @@ class Trainer(object):
                 "patch_size": getattr(self.args, "patch_size", None),
                 "input_routing": getattr(self.args, "input_routing", None),
                 "mode": mode,
+                "expert_names": ["context", "spatial", "identity"],
             },
         }
         if mode == "full":

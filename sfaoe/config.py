@@ -235,8 +235,8 @@ def parse_args(argv=None, *, initialize_run=True):
             raise ValueError("dilations requires four positive integers")
         if len(sizes) not in (1, 4) or min(sizes) < 1:
             raise ValueError("patch_size requires one or four positive integers")
-        if args.top_k < 1 or args.top_k > 4:
-            raise ValueError("top_k must be between 1 and 4")
+        if args.top_k < 1 or args.top_k > 3:
+            raise ValueError("top_k must be between 1 and 3")
     except ValueError as exc:
         parser.error(str(exc))
     if initialize_run:

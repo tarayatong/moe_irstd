@@ -79,7 +79,7 @@ class SpatialSparseMoE(nn.Module):
         experts=None,
         noise_scale=0.2,
         patch_size=1,
-        input_routing="full",
+        input_routing="sparse",
     ):
         super(SpatialSparseMoE, self).__init__()
         ir = str(input_routing).lower()

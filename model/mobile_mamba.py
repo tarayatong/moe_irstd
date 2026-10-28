@@ -4,6 +4,7 @@ from sfaoe.experts import (
     create_wavelet_filter,
     wavelet_transform,
     inverse_wavelet_transform,
+    ContextWaveletConv2d,
     MBWTConv2d,
     _ScaleModule,
     DWConv2d_BN_ReLU,

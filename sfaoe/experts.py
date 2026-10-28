@@ -9,15 +9,8 @@ from functools import partial
 import pywt
 import pywt.data
 from timm.models.layers import DropPath
-from model.mask import SpatialSparseMoE, SpatialSparse, ChannelRouter
-from model.blocks import DySample
-from model.conparitive_freq_module import (
-    FourierCombineNet,
-    WaveletAttention,
-    PatchFFT,
-    FrequencySeparation,
-    Freq_block,
-)
+from sfaoe.routing import SpatialSparseMoE
+
 
 
 def create_wavelet_filter(wave, in_size, out_size, type=torch.float):
@@ -65,12 +58,12 @@ def inverse_wavelet_transform(x, filters):
     return x
 
 
-class MBWTConv2d(nn.Module):
-    """小波专家：逐级分解、子带滤波、由粗到细重建。
+class ContextWaveletConv2d(nn.Module):
+    """Context expert: filter all LL/LH/HL/HH bands and reconstruct with IWT.
 
-    两个变体均保留 LL/LH/HL/HH 四个子带。zone="h" 额外增强细节。
-    奇数边长在分解前补齐，重建后裁回原尺寸。
-    保留 llconv、hconv 等已有成员，即使某变体不使用，以兼容旧权重。"""
+    This keeps the original two-level context computation. No separate detail
+    enhancement path is constructed. Odd dimensions are padded then cropped.
+    """
 
     def __init__(
         self,
@@ -79,13 +72,11 @@ class MBWTConv2d(nn.Module):
         kernel_size=5,
         stride=1,
         bias=True,
-        wt_levels=1,
+        wt_levels=2,
         wt_type="db1",
-        zone=None,
     ):
-        super(MBWTConv2d, self).__init__()
+        super().__init__()
         assert in_channels == out_channels
-        self.zone = zone
         self.in_channels = in_channels
         self.wt_levels = wt_levels
         self.stride = stride
@@ -111,11 +102,6 @@ class MBWTConv2d(nn.Module):
                 )
                 for _ in range(self.wt_levels)
             ]
-        )
-        self.llconv = DWConv2d_BN_ReLU(in_channels, in_channels, kernel_size=1)
-        self.hconv = nn.Sequential(
-            DySample(in_channels * 3, scale=2),
-            DWConv2d_BN_ReLU(in_channels * 3, in_channels, kernel_size=1),
         )
         self.wavelet_scale = nn.ModuleList(
             [
@@ -152,11 +138,6 @@ class MBWTConv2d(nn.Module):
             curr_x = self.wt_function(curr_x_ll)
             curr_x_ll = curr_x[:, :, 0, :, :]
             shape_x = curr_x.shape
-            if self.zone == "h":
-                x_h = curr_x[:, :, 1:4, :, :]
-                new_x_h = self.hconv(
-                    x_h.reshape(shape_x[0], shape_x[1] * 3, shape_x[3], shape_x[4])
-                )
             curr_x_tag = curr_x.reshape(
                 shape_x[0], shape_x[1] * 4, shape_x[3], shape_x[4]
             )
@@ -176,13 +157,14 @@ class MBWTConv2d(nn.Module):
             next_x_ll = next_x_ll[:, :, : curr_shape[2], : curr_shape[3]]
         x_tag = next_x_ll
         assert len(x_ll_in_levels) == 0
-        if self.zone == "h":
-            x = x + x_tag + new_x_h
-        else:
-            x = x + x_tag
+        x = x + x_tag
         if self.do_stride is not None:
             x = self.do_stride(x)
         return x
+
+
+# Legacy import name; this alias only implements the context expert.
+MBWTConv2d = ContextWaveletConv2d
 
 
 class _ScaleModule(nn.Module):
@@ -598,161 +580,37 @@ class BasicRFB_a(nn.Module):
 
 
 class MobileMambaModule(torch.nn.Module):
-    """异构专家混合模块。默认专家顺序为高频、低频、空间、Identity。
+    """Fixed expert order: context, multireceptive spatial, Identity.
 
-    名称 spacial_moe 为历史拼写，保留以兼容 state_dict 与路由导出。
-    本实现的主路径使用卷积、小波和 MoE；历史类名不代表启用状态空间模型。"""
+    spacial_moe and local_op retain their historical checkpoint key names.
+    global_ratio/local_ratio remain accepted for the backbone call signature;
+    each expert operates on all channels, with sparse inputs by default.
+    """
 
     def __init__(
-        self,
-        dim,
-        global_ratio=0.25,
-        local_ratio=0.25,
-        kernels=3,
-        global_type="wt_low_high",
-        layer=2,
-        dilations=None,
-        noise_scale=0.2,
-        patch_size=1,
-        top_k=2,
-        input_routing="full",
+        self, dim, global_ratio=0.25, local_ratio=0.25, kernels=3,
+        global_type="context", layer=2, dilations=None, noise_scale=0.2,
+        patch_size=1, top_k=2, input_routing="sparse",
     ):
         super().__init__()
+        if global_type != "context":
+            raise ValueError("This branch supports only the context expert")
+        if not 1 <= int(top_k) <= 3:
+            raise ValueError("top_k must be between 1 and 3")
         self.dim = dim
-        self.multi = False
-        self.moe = True
-        if not self.moe:
-            self.global_channels = nearest_multiple_of_16(int(global_ratio * dim))
-            if self.global_channels + int(local_ratio * dim) > dim:
-                self.local_channels = dim - self.global_channels
-            else:
-                self.local_channels = int(local_ratio * dim)
-            self.identity_channels = (
-                self.dim - self.global_channels - self.local_channels
-            )
-        else:
-            self.global_channels = dim
-            self.local_channels = dim
-        if self.multi:
-            self.local_op1 = DWConv2d_BN_ReLU(
-                self.local_channels, self.local_channels, kernel_size=3
-            )
-            self.local_op2 = DWConv2d_BN_ReLU(
-                self.local_channels, self.local_channels, kernel_size=5
-            )
-        elif self.local_channels != 0:
-            self.local_op = BasicRFB_a(
-                self.local_channels, self.local_channels, dilations=dilations
-            )
-        else:
-            self.local_op = nn.Identity()
-        if self.multi:
-            self.global_op1 = MBWTConv2d(
-                self.global_channels,
-                self.global_channels,
-                kernels,
-                wt_levels=1,
-                zone="h",
-            )
-            self.global_op2 = MBWTConv2d(
-                self.global_channels, self.global_channels, kernels, wt_levels=1
-            )
-        elif self.global_channels != 0:
-            if global_type == "wt_low_high":
-                self.global_op = [
-                    MBWTConv2d(
-                        self.global_channels,
-                        self.global_channels,
-                        kernels,
-                        wt_levels=1,
-                        zone="h",
-                    ),
-                    MBWTConv2d(
-                        self.global_channels, self.global_channels, kernels, wt_levels=2
-                    ),
-                ]
-            elif global_type == "FFT_combine":
-                self.global_op = [FourierCombineNet(self.global_channels)]
-            elif global_type == "WT_MHA":
-                self.global_op = [WaveletAttention(self.global_channels, 32, 4, 8)]
-            elif global_type == "PFFT":
-                self.global_op = [
-                    PatchFFT(
-                        self.global_channels, embed_dim=32, num_heads=4, layer=layer
-                    )
-                ]
-            elif global_type == "FLM":
-                self.global_op = [
-                    FrequencySeparation(
-                        self.global_channels, 2 ** (8 - layer), 2 ** (8 - layer)
-                    )
-                ]
-            elif global_type == "FFT_conv":
-                self.global_op = [Freq_block(self.global_channels)]
-        else:
-            self.global_op = nn.Identity()
-        self.proj = torch.nn.Sequential(
-            torch.nn.ReLU(), Conv2d_BN(dim, dim, bn_weight_init=0)
+        self.local_op = BasicRFB_a(dim, dim, dilations=dilations)
+        context = ContextWaveletConv2d(dim, dim, kernels, wt_levels=2)
+        self.global_op = [context]
+        self.expert_names = ("context", "spatial", "identity")
+        self.proj = nn.Sequential(nn.ReLU(), Conv2d_BN(dim, dim, bn_weight_init=0))
+        experts = nn.ModuleList([context, self.local_op, nn.Identity()])
+        self.spacial_moe = SpatialSparseMoE(
+            dim, 3, int(top_k), dim, experts, noise_scale=noise_scale,
+            patch_size=patch_size, input_routing=input_routing,
         )
-        if self.moe:
-            if self.multi:
-                experts = nn.ModuleList(
-                    [self.global_op1, self.global_op2]
-                    + [self.local_op1, self.local_op2, nn.Identity()]
-                )
-                k = max(1, min(int(top_k), len(experts)))
-                self.spacial_moe = SpatialSparseMoE(
-                    dim,
-                    len(experts),
-                    k,
-                    dim,
-                    experts,
-                    noise_scale=noise_scale,
-                    patch_size=patch_size,
-                    input_routing=input_routing,
-                )
-            else:
-                experts = nn.ModuleList(self.global_op + [self.local_op, nn.Identity()])
-                k = max(1, min(int(top_k), len(experts)))
-                self.spacial_moe = SpatialSparseMoE(
-                    dim,
-                    len(experts),
-                    k,
-                    dim,
-                    experts,
-                    noise_scale=noise_scale,
-                    patch_size=patch_size,
-                    input_routing=input_routing,
-                )
 
     def forward(self, x):
-        if not self.moe:
-            (x1, x2, x3) = torch.split(
-                x,
-                [self.global_channels, self.local_channels, self.identity_channels],
-                dim=1,
-            )
-            x1 = self.global_op(x1)
-            if self.multi:
-                (x2_1, x2_2, x2_3) = torch.split(
-                    x2,
-                    [
-                        self.local_channels - 2 * (self.local_channels // 3),
-                        self.local_channels // 3,
-                        self.local_channels // 3,
-                    ],
-                    dim=1,
-                )
-                x2_1 = self.local_op1(x2_1)
-                x2_2 = self.local_op2(x2_2)
-                x_out = torch.cat([x1, x2_1, x2_2, x2_3, x3], dim=1)
-            else:
-                x2 = self.local_op(x2)
-                x_out = torch.cat([x1, x2, x3], dim=1)
-            x_out = self.proj(x_out)
-        else:
-            x_out = self.proj(self.spacial_moe(x))
-        return x_out
+        return self.proj(self.spacial_moe(x))
 
 
 class MobileMambaBlockWindow(torch.nn.Module):
@@ -769,7 +627,7 @@ class MobileMambaBlockWindow(torch.nn.Module):
         noise_scale=0.2,
         patch_size=1,
         top_k=2,
-        input_routing="full",
+        input_routing="sparse",
     ):
         super().__init__()
         self.dim = dim
@@ -778,7 +636,7 @@ class MobileMambaBlockWindow(torch.nn.Module):
             global_ratio=global_ratio,
             local_ratio=local_ratio,
             kernels=kernels,
-            global_type="wt_low_high",
+            global_type="context",
             layer=layer,
             dilations=dilations,
             noise_scale=noise_scale,
@@ -809,7 +667,7 @@ class MobileMambaBlock(torch.nn.Module):
         noise_scale=0.2,
         patch_size=1,
         top_k=2,
-        input_routing="full",
+        input_routing="sparse",
     ):
         super().__init__()
         self.dw0 = Residual(Conv2d_BN(ed, ed, 3, 1, 1, groups=ed, bn_weight_init=0.0))

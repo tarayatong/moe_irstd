@@ -32,7 +32,7 @@ class DNANet(nn.Module):
         noise_scale=0.2,
         patch_size=1,
         top_k=2,
-        input_routing="full",
+        input_routing="sparse",
     ):
         """构建网络，patch_size/moe_stages 按分辨率层索引。
 

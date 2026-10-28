@@ -105,10 +105,10 @@ def discover_routing_dirs_from_run_roots(run_roots):
 
 
 def expert_display_names(num_experts):
-    """Expert index → display name (0 高频, 1 低频, 2 local, 3 identity)."""
-    known = ['High-frequency', 'Low-frequency', 'Local', 'Identity']
-    names = [known[i] if i < len(known) else f'Expert {i}' for i in range(num_experts)]
-    return names
+    """Names for this branch only; reject ambiguous historical exports."""
+    if num_experts != 3:
+        raise ValueError("Expected 3 experts: context, spatial, Identity; use the historical branch for older exports")
+    return ['Context (all subbands)', 'Spatial', 'Identity']
 
 
 def _parse_patch_size_arg(patch_size_str):
@@ -298,7 +298,7 @@ def export_test_routing(
         noise_scale=0.2,
         patch_size_str='1',
         top_k=2,
-        input_routing='full',
+        input_routing='sparse',
         in_channels=3,
         device='auto',
 ):
@@ -363,12 +363,8 @@ def export_test_routing(
     model.eval()
 
     ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
-    state = ckpt['state_dict'] if isinstance(ckpt, dict) and 'state_dict' in ckpt else ckpt
-    missing, unexpected = model.load_state_dict(state, strict=False)
-    if missing:
-        print(f'Warning: load_state_dict missing keys ({len(missing)}):', missing[:8], '...' if len(missing) > 8 else '')
-    if unexpected:
-        print(f'Warning: load_state_dict unexpected keys ({len(unexpected)}):', unexpected[:8], '...' if len(unexpected) > 8 else '')
+    from sfaoe.checkpoints import checkpoint_state_dict
+    model.load_state_dict(checkpoint_state_dict(ckpt), strict=True)
 
     saved = []
     saved_count = 0
@@ -931,7 +927,7 @@ if __name__ == '__main__':
                         help='MoE patch size: one int or comma list (export)')
     parser.add_argument('--top_k', type=int, default=2,
                         help='MoE top-k (export)')
-    parser.add_argument('--input_routing', type=str, default='full',
+    parser.add_argument('--input_routing', type=str, default='sparse',
                         choices=['full', 'sparse'],
                         help='MoE input routing (export)')
     parser.add_argument('--in_channels', type=int, default=3,
