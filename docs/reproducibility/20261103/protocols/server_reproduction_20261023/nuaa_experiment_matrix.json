@@ -1,0 +1,1279 @@
+{
+  "scope": "NUAA-only; other datasets deferred by user",
+  "protocol": "Main default 600/Tmax600; ALL ablations including a distinct default control 300/Tmax300; batch8 and lr0.05; same seed40",
+  "default_reuse": "Use NUAA-SIRST_control300 for all ablation tables; main600 is separate, avoiding mixed training budgets",
+  "runs": [
+    {
+      "run_id": "NUAA-SIRST_control300",
+      "group": "ablation_control",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "NUAA-SIRST_default",
+      "group": "main",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 600,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 600,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "experts_single_spatial",
+      "group": "expert_configuration",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "expert_variant": "single_spatial",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "experts_multi_spatial",
+      "group": "expert_configuration",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "expert_variant": "multi_spatial",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "experts_multi_low",
+      "group": "expert_configuration",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "expert_variant": "multi_low",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "experts_multi_high",
+      "group": "expert_configuration",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "expert_variant": "multi_high",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "frequency_HLSR",
+      "group": "frequency_replacement",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "frequency_variant": "HLSR",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "frequency_FreqODEs",
+      "group": "frequency_replacement",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "frequency_variant": "FreqODEs",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "frequency_LGFW",
+      "group": "frequency_replacement",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "frequency_variant": "LGFW",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "frequency_FAM",
+      "group": "frequency_replacement",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "frequency_variant": "FAM",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "frequency_FDD",
+      "group": "frequency_replacement",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "frequency_variant": "FDD",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "router_fixed",
+      "group": "routing_strategy",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "router_variant": "fixed",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "router_channel_weighted",
+      "group": "routing_strategy",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "router_variant": "channel_weighted",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "router_channel_gated",
+      "group": "routing_strategy",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "router_variant": "channel_gated",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "router_pixel_weighted",
+      "group": "routing_strategy",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "router_variant": "pixel_weighted",
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "granularity_256_128_64_32",
+      "group": "routing_granularity",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": [
+          256,
+          128,
+          64,
+          32
+        ],
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "granularity_4_4_4_4",
+      "group": "routing_granularity",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": [
+          4,
+          4,
+          4,
+          4
+        ],
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "granularity_16_16_16_16",
+      "group": "routing_granularity",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "granularity_1_2_4_8",
+      "group": "routing_granularity",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "granularity_8_4_2_1",
+      "group": "routing_granularity",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": [
+          8,
+          4,
+          2,
+          1
+        ],
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "levels_none",
+      "group": "resolution_deployment",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "levels_0",
+      "group": "resolution_deployment",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "levels_3",
+      "group": "resolution_deployment",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "levels_0_1",
+      "group": "resolution_deployment",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          0,
+          0
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "levels_1_2",
+      "group": "resolution_deployment",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "levels_2_3",
+      "group": "resolution_deployment",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "dilation_1_1_1_1",
+      "group": "spatial_dilation",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "dilation_1_1_1_2",
+      "group": "spatial_dilation",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          1,
+          1,
+          2
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "dilation_1_3_3_5",
+      "group": "spatial_dilation",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          3,
+          3,
+          5
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    },
+    {
+      "run_id": "dilation_1_5_5_7",
+      "group": "spatial_dilation",
+      "status": "pending_preflight",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "CosineAnnealingLR",
+        "min_lr": 1e-05,
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          5,
+          5,
+          7
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "NUAA-SIRST",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch",
+        "scheduler_initial_step": false,
+        "scheduler_T_max": 300,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+      }
+    }
+  ],
+  "time_budget_hours": [
+    40,
+    60
+  ]
+}

@@ -1,0 +1,68 @@
+C:\Users\tyf\miniconda3\envs\hsi\lib\site-packages\timm\models\layers\__init__.py:49: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+test_explicit_options_are_not_overwritten (test_config.ConfigurationTests) ... ok
+test_invalid_granularity_is_rejected (test_config.ConfigurationTests) ... usage: -c [-h] [--model MODEL] [--channel_size CHANNEL_SIZE]
+          [--backbone BACKBONE] [--deep_supervision DEEP_SUPERVISION]
+          [--dataset DATASET] [--mode MODE] [--test_size TEST_SIZE]
+          [--root ROOT] [--suffix SUFFIX] [--split_method SPLIT_METHOD]
+          [--workers N] [--in_channels IN_CHANNELS] [--base_size BASE_SIZE]
+          [--crop_size CROP_SIZE] [--epochs N] [--start_epoch N]
+          [--train_batch_size N] [--test_batch_size N] [--min_lr MIN_LR]
+          [--optimizer OPTIMIZER]
+          [--scheduler {CosineAnnealingLR,ReduceLROnPlateau}] [--lr LR]
+          [--gpus GPUS] [--loss LOSS] [--label LABEL] [--block BLOCK]
+          [--use_compile USE_COMPILE]
+          [--compile_mode {default,reduce-overhead,max-autotune}]
+          [--arch_lr ARCH_LR] [--arch_weight_decay M]
+          [--moe_stages MOE_STAGES] [--dilations DILATIONS]
+          [--noise_scale NOISE_SCALE] [--patch_size PATCH_SIZE]
+          [--top_k TOP_K] [--aux_loss_weight AUX_LOSS_WEIGHT]
+          [--input_routing {full,sparse}] [--save_routing {none,lite,full}]
+          [--routing_epochs ROUTING_EPOCHS] [--save_intermediate_ckpt]
+          [--save_dir SAVE_DIR]
+-c: error: patch_size requires one or four positive integers
+ok
+test_original_effective_defaults (test_config.ConfigurationTests) ... ok
+test_context_odd_shape_gradient_and_sample_independence (test_context_model.ContextModelTests) ... ok
+test_default_model_has_fifteen_three_expert_sparse_routers (test_context_model.ContextModelTests) ... C:\Users\tyf\miniconda3\envs\hsi\lib\site-packages\torch\functional.py:534: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\builder\windows\pytorch\aten\src\ATen\native\TensorShape.cpp:3596.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+ok
+test_four_way_topk_is_rejected (test_context_model.ContextModelTests) ... usage: -c [-h] [--model MODEL] [--channel_size CHANNEL_SIZE]
+          [--backbone BACKBONE] [--deep_supervision DEEP_SUPERVISION]
+          [--dataset DATASET] [--mode MODE] [--test_size TEST_SIZE]
+          [--root ROOT] [--suffix SUFFIX] [--split_method SPLIT_METHOD]
+          [--workers N] [--in_channels IN_CHANNELS] [--base_size BASE_SIZE]
+          [--crop_size CROP_SIZE] [--epochs N] [--start_epoch N]
+          [--train_batch_size N] [--test_batch_size N] [--min_lr MIN_LR]
+          [--optimizer OPTIMIZER]
+          [--scheduler {CosineAnnealingLR,ReduceLROnPlateau}] [--lr LR]
+          [--gpus GPUS] [--loss LOSS] [--label LABEL] [--block BLOCK]
+          [--use_compile USE_COMPILE]
+          [--compile_mode {default,reduce-overhead,max-autotune}]
+          [--arch_lr ARCH_LR] [--arch_weight_decay M]
+          [--moe_stages MOE_STAGES] [--dilations DILATIONS]
+          [--noise_scale NOISE_SCALE] [--patch_size PATCH_SIZE]
+          [--top_k TOP_K] [--aux_loss_weight AUX_LOSS_WEIGHT]
+          [--input_routing {full,sparse}] [--save_routing {none,lite,full}]
+          [--routing_epochs ROUTING_EPOCHS] [--save_intermediate_ckpt]
+          [--save_dir SAVE_DIR]
+-c: error: top_k must be between 1 and 3
+ok
+test_old_context_dead_keys_are_removed_but_four_experts_rejected (test_context_model.ContextModelTests) ... ok
+test_sparse_router_really_masks_each_expert_input (test_context_model.ContextModelTests) ... ok
+test_full_and_sparse_have_finite_gradients (test_routing.RoutingTests) ... ok
+test_legacy_import_is_same_class (test_routing.RoutingTests) ... ok
+test_region_router_normalization_and_eval_determinism (test_routing.RoutingTests) ... ok
+test_snapshot_preserves_eval_mode_and_exports_expected_metadata (test_training.TrainingTests) ... ok
+test_snapshot_restores_mode_after_loader_failure (test_training.TrainingTests) ... ok
+torch 2.5.0+cu124
+test_training_uses_instance_args_without_module_global (test_training.TrainingTests) ... 
+  0%|          | 0/1 [00:00<?, ?it/s]
+Epoch 0 | total 0.0958  main 0.0841  aux 1.1668  FPS 198.89:   0%|          | 0/1 [00:00<?, ?it/s]
+Epoch 0 | total 0.0958  main 0.0841  aux 1.1668  FPS 198.89: 100%|��������������������| 1/1 [00:00<00:00, 90.45it/s]
+ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.324s
+
+OK

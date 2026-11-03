@@ -1,0 +1,609 @@
+{
+  "scope": "CPU deserialization and comparison with archived best_metrics and manifest; no inference or training",
+  "total": 43,
+  "passed": 43,
+  "runs": [
+    {
+      "run_id": "NUAA-SIRST_control300",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "experts_single_spatial",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "experts_multi_spatial",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "experts_multi_low",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "experts_multi_high",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "frequency_HLSR",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "frequency_LGFW",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "frequency_FreqODEs",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "frequency_FDD",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "frequency_FAM",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "router_fixed",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "router_channel_weighted",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "router_channel_gated",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "router_pixel_weighted",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "granularity_256_128_64_32",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "granularity_4_4_4_4",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "granularity_16_16_16_16",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "granularity_1_2_4_8",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "granularity_8_4_2_1",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "levels_none",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "levels_3",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "levels_0",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "levels_0_1",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "levels_1_2",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "levels_2_3",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "dilation_1_1_1_1",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "dilation_1_1_1_2",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "dilation_1_3_3_5",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "dilation_1_5_5_7",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "router_full_control300",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "router_full_experts_multi_high",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "NUAA-SIRST_default",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "irstd_control300",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "irstd_experts_multi_spatial",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "irstd_experts_multi_low",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "irstd_experts_multi_high",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "irstd_full_control300",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "irstd_full_experts_multi_low",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "irstd_full_experts_multi_high",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "NUAA-SIRST_hf_joint_complete_sparse300",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "NUAA-SIRST_hf_joint_spatial_identity_hf_sparse300",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "NUAA-SIRST_hf_triple_product_sparse_control300",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    },
+    {
+      "run_id": "NUAA-SIRST_hf_triple_product_full_control300",
+      "checks": {
+        "IoU": true,
+        "nIoU": true,
+        "Pd": true,
+        "Fa": true,
+        "all_four_metrics_present": true,
+        "configuration": true,
+        "epoch": true,
+        "source_hashes": true
+      },
+      "passed": true
+    }
+  ]
+}

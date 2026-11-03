@@ -1,0 +1,68 @@
+{
+  "run_id": "NUAA-SIRST_default",
+  "protocol": "cosine600_unchanged",
+  "verified_at": "2026-10-23T17:26:55.680830+08:00",
+  "finished": "2026-10-23 17:16:11",
+  "best_epoch_zero_based": 476,
+  "best_epoch_one_based": 477,
+  "raw_metrics": {
+    "IoU": 0.820826536160957,
+    "nIoU": 0.8061885548358503,
+    "Pd": 0.9908256880733946,
+    "Fa": 4.435694494912791e-06,
+    "Fa_legacy": 4.435694494912791e-06
+  },
+  "display_metrics": {
+    "IoU": 82.08,
+    "nIoU": 80.62,
+    "Pd": 99.08,
+    "Fa": 4.44
+  },
+  "checks": {
+    "complete": true,
+    "last_epoch_599": true,
+    "epoch_equal": true,
+    "configuration_equal": true,
+    "four_metrics_equal": true,
+    "epoch_log_equal": true,
+    "cosine600_preserved": true,
+    "last_lr_reached_min": true
+  },
+  "configuration": {
+    "optimizer": "Adagrad",
+    "lr": 0.05,
+    "scheduler": "CosineAnnealingLR",
+    "min_lr": 1e-05,
+    "epochs": 600,
+    "train_batch_size": 8,
+    "test_batch_size": 8,
+    "seed": 40,
+    "top_k": 2,
+    "noise_scale": 0.2,
+    "aux_loss_weight": 0.01,
+    "input_routing": "sparse",
+    "moe_stages": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "dilations": [
+      1,
+      2,
+      2,
+      3
+    ],
+    "patch_size": 1,
+    "threshold": 0.1,
+    "amp": false,
+    "dataset": "NUAA-SIRST",
+    "base_size": 256,
+    "crop_size": 256,
+    "scheduler_step": "after_each_epoch",
+    "scheduler_initial_step": false,
+    "scheduler_T_max": 600,
+    "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+  },
+  "best_checkpoint_sha256": "15254946aec419696c7b6f03caed30aaccb695b290a25228e09717fb251cb007"
+}

@@ -1,0 +1,48 @@
+{
+  "epoch": 257,
+  "configuration": {
+    "optimizer": "Adagrad",
+    "lr": 0.05,
+    "scheduler": "ConstantLR",
+    "epochs": 300,
+    "train_batch_size": 8,
+    "test_batch_size": 8,
+    "seed": 40,
+    "top_k": 2,
+    "noise_scale": 0.2,
+    "aux_loss_weight": 0.01,
+    "input_routing": "full",
+    "moe_stages": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "dilations": [
+      1,
+      2,
+      2,
+      3
+    ],
+    "patch_size": 1,
+    "threshold": 0.1,
+    "amp": false,
+    "dataset": "IRSTD",
+    "base_size": 256,
+    "crop_size": 256,
+    "expert_variant": "multi_low",
+    "scheduler_step": "after_each_epoch_factor_one",
+    "scheduler_initial_step": false,
+    "batch_policy": "fixed_per_input_resolution_after_capacity_test",
+    "scheduler_factor": 1.0
+  },
+  "IoU": 0.7247427502338635,
+  "nIoU": 0.6756964562044981,
+  "Pd": 0.9387755102040817,
+  "Fa": 1.3664587220149254e-05,
+  "Fa_legacy": 1.3133186606032338e-05,
+  "images": 201,
+  "targets": 294,
+  "threshold": 0.1,
+  "test_loss": 0.37895742340467464
+}

@@ -1,0 +1,34 @@
+{
+  "run_id": "router_pixel_weighted",
+  "protocol": "constant005_300",
+  "finished": "2026-10-24 07:15:13",
+  "verified_at": "2026-10-24T07:15:34.939236+08:00",
+  "best_epoch_one_based": 158,
+  "metrics": {
+    "IoU": 0.7829663040594322,
+    "nIoU": 0.7834888814484351,
+    "Pd": 1.0,
+    "Fa": 2.6614166969476744e-05
+  },
+  "display_metrics": {
+    "IoU": 78.3,
+    "nIoU": 78.35,
+    "Pd": 100.0,
+    "Fa": 26.61
+  },
+  "checks": {
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "finite_rows": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "config_hash": true,
+    "source_hash": true
+  },
+  "best_pt_sha256": "83817982f2fae3fc6c2bcb3702fff2872b83cb2d1c11189833e08ecac90b21be"
+}

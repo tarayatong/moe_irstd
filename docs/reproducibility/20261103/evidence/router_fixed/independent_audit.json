@@ -1,0 +1,34 @@
+{
+  "run_id": "router_fixed",
+  "protocol": "constant005_300",
+  "finished": "2026-10-24 03:37:23",
+  "verified_at": "2026-10-24T03:45:05.902812+08:00",
+  "best_epoch_one_based": 299,
+  "metrics": {
+    "IoU": 0.7696569920844327,
+    "nIoU": 0.7903406358399346,
+    "Pd": 1.0,
+    "Fa": 3.832440043604651e-05
+  },
+  "display_metrics": {
+    "IoU": 76.97,
+    "nIoU": 79.03,
+    "Pd": 100.0,
+    "Fa": 38.32
+  },
+  "checks": {
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "finite_rows": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "config_hash": true,
+    "source_hash": true
+  },
+  "best_pt_sha256": "a49c51a70e4cd854c5920bcf2bf99ce03ea9d59455cbc18a20cbdecbfc704942"
+}

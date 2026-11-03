@@ -1,0 +1,33 @@
+{
+  "run_id": "frequency_FreqODEs",
+  "protocol": "constant005_300",
+  "finished": "2026-10-24 00:32:18",
+  "verified_at": "2026-10-24T00:45:10.663690+08:00",
+  "best_epoch_one_based": 261,
+  "metrics": {
+    "IoU": 0.5529772329246935,
+    "nIoU": 0.556531840134661,
+    "Pd": 0.8899082568807339,
+    "Fa": 0.0001114246457122093
+  },
+  "display_metrics": {
+    "IoU": 55.3,
+    "nIoU": 55.65,
+    "Pd": 88.99,
+    "Fa": 111.42
+  },
+  "checks": {
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "source_hash": true,
+    "math_backend": true
+  },
+  "best_pt_sha256": "bad032764f8a0d9d6ba0da591e9c764bf10417a496d4efd7c639e54f6c9262de"
+}

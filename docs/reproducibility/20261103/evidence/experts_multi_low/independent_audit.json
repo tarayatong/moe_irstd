@@ -1,0 +1,20 @@
+{
+  "run_id": "experts_multi_low",
+  "protocol": "constant005_300",
+  "finished": "2026-10-23T20:20:53+08:00",
+  "verified_at": "2026-10-23T20:26:18+08:00",
+  "best_epoch_one_based": 278,
+  "raw_metrics": {
+    "IoU": 0.8312551953449709,
+    "nIoU": 0.8169433056535356,
+    "Pd": 1.0,
+    "Fa": 2.838844476744186e-06
+  },
+  "display_metrics": {
+    "IoU": 83.13,
+    "nIoU": 81.69,
+    "Pd": 100.0,
+    "Fa": 2.84
+  },
+  "checkpoint_and_epoch_log_verified": true
+}

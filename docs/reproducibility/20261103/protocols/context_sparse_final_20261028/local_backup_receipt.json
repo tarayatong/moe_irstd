@@ -1,0 +1,28 @@
+{
+  "bundle_sha256": "b5cb6d61acaa08526159a64ca8c14c972e7f0b3eb5a8a00eca02a6bd94cec5e4",
+  "bytes": 11780205,
+  "zip_crc": true,
+  "weight_sha": true,
+  "validation": {
+    "passed": true,
+    "source_checkpoint": "/root/autodl-tmp/moe_reproduction/runs/nuaa_fixed005_300/experts_multi_low/best.pt",
+    "source_sha256": "28661c0077a5646367374a641eb27309ddfb47f359bfd180594c8c1746f9370c",
+    "converted_sha256": "b8ec7d21ac37e803d14428900cc6e10bbe277803e31124f7d5994ecfa8c96af9",
+    "converted_bytes": 13679310,
+    "removed_dead_tensors": 420,
+    "strict_checkpoint_load": true,
+    "forward_bitwise_identical": true,
+    "output_max_abs_errors": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "context_odd_size_bitwise_identical": true,
+    "moe_count": 15,
+    "experts_per_moe": 3,
+    "default_input_routing": "sparse",
+    "no_hf_or_unused_enhancement_parameters": true,
+    "cuda_initialized": false
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "run_id": "levels_none",
+  "protocol": "constant005_300",
+  "finished": "2026-10-24 12:58:58",
+  "verified_at": "2026-10-24T12:59:40.827183+08:00",
+  "best_epoch_one_based": 294,
+  "metrics": {
+    "IoU": 0.8219656283566058,
+    "nIoU": 0.8106221494479744,
+    "Pd": 1.0,
+    "Fa": 9.226244549418604e-06
+  },
+  "display_metrics": {
+    "IoU": 82.2,
+    "nIoU": 81.06,
+    "Pd": 100.0,
+    "Fa": 9.23
+  },
+  "checks": {
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "finite_rows": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "config_hash": true,
+    "source_hash": true
+  },
+  "best_pt_sha256": "f146866c91280e8ed6a3957bd7e3135cc5e624417c6e045b513fe46f09e150e0"
+}

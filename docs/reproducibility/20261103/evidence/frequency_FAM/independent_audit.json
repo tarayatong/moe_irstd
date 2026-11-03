@@ -1,0 +1,37 @@
+{
+  "run_id": "frequency_FAM",
+  "protocol": "constant005_300",
+  "finished": "2026-10-24 02:30:29",
+  "verified_at": "2026-10-24T02:30:29.956040+08:00",
+  "best_epoch_one_based": 203,
+  "metrics": {
+    "IoU": 0.6550564496757146,
+    "nIoU": 0.6685290808808075,
+    "Pd": 0.9541284403669725,
+    "Fa": 7.505195085392442e-05
+  },
+  "display_metrics": {
+    "IoU": 65.51,
+    "nIoU": 66.85,
+    "Pd": 95.41,
+    "Fa": 75.05
+  },
+  "checks": {
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "finite_rows": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "source_hash": true,
+    "original_twelve_rows": true,
+    "original_manifest_unchanged": true
+  },
+  "resumed_from_epoch_one_based": 12,
+  "backend_change": false,
+  "best_pt_sha256": "4f15938aadebe462d8f202a679996117ce492dcc2264eb44e1e4ee953f793889"
+}

@@ -1,0 +1,34 @@
+{
+  "run_id": "granularity_256_128_64_32",
+  "protocol": "constant005_300",
+  "finished": "2026-10-24 08:19:10",
+  "verified_at": "2026-10-24T08:29:32.574587+08:00",
+  "best_epoch_one_based": 108,
+  "metrics": {
+    "IoU": 0.7601238070673201,
+    "nIoU": 0.7582902917616903,
+    "Pd": 0.981651376146789,
+    "Fa": 3.459841706031977e-05
+  },
+  "display_metrics": {
+    "IoU": 76.01,
+    "nIoU": 75.83,
+    "Pd": 98.17,
+    "Fa": 34.6
+  },
+  "checks": {
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "finite_rows": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "config_hash": true,
+    "source_hash": true
+  },
+  "best_pt_sha256": "d32a1528211b7efdd2964fdd8b6dd2b006627f0cea61b69580fe22ebb0dd4461"
+}

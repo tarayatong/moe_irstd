@@ -1,0 +1,32 @@
+{
+  "run_id": "frequency_FDD",
+  "protocol": "constant005_300",
+  "finished": "2026-10-24 01:35:38",
+  "verified_at": "2026-10-24T01:44:58.517179+08:00",
+  "best_epoch_one_based": 209,
+  "metrics": {
+    "IoU": 0.7951966217999472,
+    "nIoU": 0.7885812500160472,
+    "Pd": 0.9908256880733946,
+    "Fa": 6.742255632267442e-06
+  },
+  "display_metrics": {
+    "IoU": 79.52,
+    "nIoU": 78.86,
+    "Pd": 99.08,
+    "Fa": 6.74
+  },
+  "checks": {
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "source_hash": true
+  },
+  "best_pt_sha256": "03b8ee62297fdd65b17c100a3111019b0dc0b3fb9867fa5fcb45bcd540f08a09"
+}

@@ -1,0 +1,82 @@
+{
+  "run_id": "irstd_experts_multi_low",
+  "dataset": "IRSTD-1K",
+  "input_size": 256,
+  "protocol": "irstd_constant005_300",
+  "input_routing": "sparse",
+  "nuaa_reference": "experts_multi_low",
+  "group": "irstd_expert_configuration",
+  "finished": "2026-10-26 23:27:21",
+  "verified_at": "2026-10-26T23:27:28.758883+08:00",
+  "best_epoch_one_based": 300,
+  "configuration": {
+    "optimizer": "Adagrad",
+    "lr": 0.05,
+    "scheduler": "ConstantLR",
+    "epochs": 300,
+    "train_batch_size": 8,
+    "test_batch_size": 8,
+    "seed": 40,
+    "top_k": 2,
+    "noise_scale": 0.2,
+    "aux_loss_weight": 0.01,
+    "input_routing": "sparse",
+    "moe_stages": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "dilations": [
+      1,
+      2,
+      2,
+      3
+    ],
+    "patch_size": 1,
+    "threshold": 0.1,
+    "amp": false,
+    "dataset": "IRSTD",
+    "base_size": 256,
+    "crop_size": 256,
+    "expert_variant": "multi_low",
+    "scheduler_step": "after_each_epoch_factor_one",
+    "scheduler_initial_step": false,
+    "batch_policy": "fixed_per_input_resolution_after_capacity_test",
+    "scheduler_factor": 1.0
+  },
+  "metrics": {
+    "IoU": 0.7143191389798783,
+    "nIoU": 0.6654599124904297,
+    "Pd": 0.9149659863945578,
+    "Fa": 1.0096611668221393e-05
+  },
+  "display_metrics": {
+    "IoU": 71.43,
+    "nIoU": 66.55,
+    "Pd": 91.5,
+    "Fa": 10.1
+  },
+  "checks": {
+    "dataset": true,
+    "input256": true,
+    "sparse_input": true,
+    "paired_configuration": true,
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "finite_rows": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "config_hash": true,
+    "source_hash": true,
+    "finite_weights": true,
+    "split_hashes": true
+  },
+  "best_pt_sha256": "d0340f6c34b9ef00893dfb382eeb5da9e27bd1c2ff1eac8dc58adc773f013c9c",
+  "last_pt_sha256": "b66fa096c46992156af361946a41ba3ea3f9b219a5bcaf2ccf3e7ad21edaed2d"
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "path": "server_reproduction_20261023/nuaa_frozen_runtime.tar.gz",
+    "bytes": 150193,
+    "sha256": "2a615eb7538b0956f87869adbfe5bdf64b83acbffd9d2eaaf0dd6d0c1083b710"
+  },
+  {
+    "path": "server_reproduction_20261023/local_python_snapshot.tar.gz",
+    "bytes": 90240,
+    "sha256": "5667f4e903e5399bcdf2c158d212e144e89300fcef3c823800302bd709b8ba7c"
+  },
+  {
+    "path": "irstd_experts_fixed005_20261026/irstd_setup_sources_20261026.zip",
+    "bytes": 121349,
+    "sha256": "baa11dbcd8ef846d90898692922a0a43ce7eae1ebc084abf867d49bdf921e360"
+  },
+  {
+    "path": "nuaa_hf_joint_20261027/hf_joint_start_bundle.zip",
+    "bytes": 161918,
+    "sha256": "8a9e011ad5ecdac94e1b002ce88414ffe11cc7d63afe291eba72fa3684dc6092"
+  },
+  {
+    "path": "nuaa_hf_triple_product_20261027/start_bundle.zip",
+    "bytes": 153127,
+    "sha256": "b668014253422704b158454c6c485ee1fe2695dd44515684a3d7c769dcac0dd2"
+  },
+  {
+    "path": "nuaa_hf_triple_product_full_20261027/full_start_bundle.zip",
+    "bytes": 151906,
+    "sha256": "9e4e4719b266c6a917fca959d6cd8bf20fb26157f55008aaf3e4e2800f920954"
+  },
+  {
+    "path": "context_sparse_final_20261028/context_sparse_final_source.zip",
+    "bytes": 132182,
+    "sha256": "044ac91b6eeeca77369e2466875f3bfbb702539a576393c5b525510b28d0a241"
+  },
+  {
+    "path": "C:\\Users\\tyf\\Documents\\Codex\\2026-10-21\\zhe\\outputs\\context_sparse_final_20261028\\verified_weights\\context_sparse_best.pt",
+    "bytes": 13679310,
+    "sha256": "b8ec7d21ac37e803d14428900cc6e10bbe277803e31124f7d5994ecfa8c96af9"
+  },
+  {
+    "path": "C:\\Users\\tyf\\Documents\\Codex\\2026-10-21\\zhe\\outputs\\server_reproduction_20261023\\expert_configuration_completed\\experts_multi_low\\best.pt",
+    "bytes": 13975674,
+    "sha256": "28661c0077a5646367374a641eb27309ddfb47f359bfd180594c8c1746f9370c"
+  }
+]

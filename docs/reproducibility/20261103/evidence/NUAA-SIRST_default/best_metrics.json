@@ -1,0 +1,48 @@
+{
+  "epoch": 476,
+  "configuration": {
+    "optimizer": "Adagrad",
+    "lr": 0.05,
+    "scheduler": "CosineAnnealingLR",
+    "min_lr": 1e-05,
+    "epochs": 600,
+    "train_batch_size": 8,
+    "test_batch_size": 8,
+    "seed": 40,
+    "top_k": 2,
+    "noise_scale": 0.2,
+    "aux_loss_weight": 0.01,
+    "input_routing": "sparse",
+    "moe_stages": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "dilations": [
+      1,
+      2,
+      2,
+      3
+    ],
+    "patch_size": 1,
+    "threshold": 0.1,
+    "amp": false,
+    "dataset": "NUAA-SIRST",
+    "base_size": 256,
+    "crop_size": 256,
+    "scheduler_step": "after_each_epoch",
+    "scheduler_initial_step": false,
+    "scheduler_T_max": 600,
+    "batch_policy": "fixed_per_input_resolution_after_capacity_test"
+  },
+  "IoU": 0.820826536160957,
+  "nIoU": 0.8061885548358503,
+  "Pd": 0.9908256880733946,
+  "Fa": 4.435694494912791e-06,
+  "Fa_legacy": 4.435694494912791e-06,
+  "images": 86,
+  "targets": 109,
+  "threshold": 0.1,
+  "test_loss": 0.2942322693591894
+}

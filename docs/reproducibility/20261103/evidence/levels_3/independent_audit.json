@@ -1,0 +1,34 @@
+{
+  "run_id": "levels_3",
+  "protocol": "constant005_300",
+  "finished": "2026-10-24 14:22:19",
+  "verified_at": "2026-10-24T14:29:39.169731+08:00",
+  "best_epoch_one_based": 296,
+  "metrics": {
+    "IoU": 0.8094736842105263,
+    "nIoU": 0.8057570989495066,
+    "Pd": 0.9908256880733946,
+    "Fa": 2.963043922601744e-05
+  },
+  "display_metrics": {
+    "IoU": 80.95,
+    "nIoU": 80.58,
+    "Pd": 99.08,
+    "Fa": 29.63
+  },
+  "checks": {
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "finite_rows": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "config_hash": true,
+    "source_hash": true
+  },
+  "best_pt_sha256": "1884db8eec7a5fb545e2d119e40cd1930ac214dbfcbf052b5e0b93c8c5fc16b7"
+}

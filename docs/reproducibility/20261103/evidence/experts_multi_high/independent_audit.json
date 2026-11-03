@@ -1,0 +1,28 @@
+{
+  "run_id": "experts_multi_high",
+  "protocol": "constant005_300",
+  "finished": "2026-10-23 21:32:04",
+  "verified_at": "2026-10-23T21:46:21.489900+08:00",
+  "best_epoch_one_based": 295,
+  "metrics": {
+    "IoU": 0.7863777089783281,
+    "nIoU": 0.8010942733314663,
+    "Pd": 1.0,
+    "Fa": 3.743726153706395e-05
+  },
+  "display_metrics": {
+    "IoU": 78.64,
+    "nIoU": 80.11,
+    "Pd": 100.0,
+    "Fa": 37.44
+  },
+  "checks": {
+    "complete": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "constant_lr": true,
+    "checkpoint_lr": true
+  }
+}

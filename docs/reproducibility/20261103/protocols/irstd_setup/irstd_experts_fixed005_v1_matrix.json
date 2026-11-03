@@ -1,0 +1,168 @@
+{
+  "protocol": "IRSTD-1K;256;300 epochs;Adagrad constant0.05;batch8;seed40;sparse;noAMP",
+  "runs": [
+    {
+      "run_id": "irstd_control300",
+      "group": "irstd_expert_configuration",
+      "nuaa_reference": "NUAA-SIRST_control300",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "ConstantLR",
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "IRSTD",
+        "base_size": 256,
+        "crop_size": 256,
+        "scheduler_step": "after_each_epoch_factor_one",
+        "scheduler_initial_step": false,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test",
+        "scheduler_factor": 1.0
+      }
+    },
+    {
+      "run_id": "irstd_experts_multi_spatial",
+      "group": "irstd_expert_configuration",
+      "nuaa_reference": "experts_multi_spatial",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "ConstantLR",
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "IRSTD",
+        "base_size": 256,
+        "crop_size": 256,
+        "expert_variant": "multi_spatial",
+        "scheduler_step": "after_each_epoch_factor_one",
+        "scheduler_initial_step": false,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test",
+        "scheduler_factor": 1.0
+      }
+    },
+    {
+      "run_id": "irstd_experts_multi_low",
+      "group": "irstd_expert_configuration",
+      "nuaa_reference": "experts_multi_low",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "ConstantLR",
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "IRSTD",
+        "base_size": 256,
+        "crop_size": 256,
+        "expert_variant": "multi_low",
+        "scheduler_step": "after_each_epoch_factor_one",
+        "scheduler_initial_step": false,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test",
+        "scheduler_factor": 1.0
+      }
+    },
+    {
+      "run_id": "irstd_experts_multi_high",
+      "group": "irstd_expert_configuration",
+      "nuaa_reference": "experts_multi_high",
+      "configuration": {
+        "optimizer": "Adagrad",
+        "lr": 0.05,
+        "scheduler": "ConstantLR",
+        "epochs": 300,
+        "train_batch_size": 8,
+        "test_batch_size": 8,
+        "seed": 40,
+        "top_k": 2,
+        "noise_scale": 0.2,
+        "aux_loss_weight": 0.01,
+        "input_routing": "sparse",
+        "moe_stages": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "dilations": [
+          1,
+          2,
+          2,
+          3
+        ],
+        "patch_size": 1,
+        "threshold": 0.1,
+        "amp": false,
+        "dataset": "IRSTD",
+        "base_size": 256,
+        "crop_size": 256,
+        "expert_variant": "multi_high",
+        "scheduler_step": "after_each_epoch_factor_one",
+        "scheduler_initial_step": false,
+        "batch_policy": "fixed_per_input_resolution_after_capacity_test",
+        "scheduler_factor": 1.0
+      }
+    }
+  ]
+}

@@ -69,3 +69,10 @@ python tools/convert_context_checkpoint.py --input /path/to/experts_multi_low/be
 删除未使用成员会改变从头构建模型时的随机数消耗顺序。因此即使 seed 相同，也不应
 声称清理后从头训练会逐位复现原实验。已有 context 权重的 forward 数值保持性单独验证。
 数据集、历史权重、实验输出和论文不纳入本分支整理，也不删除。
+
+## 收尾交接与实验对应记录
+
+2026-11-03 整理的[交接说明](docs/reproducibility/20261103/HANDOFF.txt)及
+[43条实验索引](docs/reproducibility/20261103/experiment_index.csv)记录了配置、权重、
+源码与数据划分哈希。43个检查点的元数据核对及14项既有测试通过。
+论文四专家主结果与最终三专家代码的差异、历史结果缺口也在交接说明中列明。

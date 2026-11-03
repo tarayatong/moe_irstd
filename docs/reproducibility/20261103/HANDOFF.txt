@@ -1,0 +1,66 @@
+SFAoE 收尾交接审计（2026-11-03）
+
+结论
+最终代码已整理为 context + 多感受野空间 + Identity 三专家，源提交为
+f8c186d3e72ab54b9d06ed042f29503dbc9d0cdf，原分支 final/context-sparse。
+本次补充可提交的交接索引，并将通过检查的版本快进合并到 main。
+实际合并/推送状态以 merge_receipt.json 为准。
+
+本次验证
+1. 43 个本地实验均找到 manifest.json、best.pt 和 best_metrics.json。
+   逐个读取 CPU checkpoint，配置、源码哈希、最佳 epoch、IoU/nIoU/Pd/Fa
+   与留存记录一致，43/43 通过。覆盖 NUAA 固定学习率31条、cosine600主实验1条、
+   IRSTD受控实验7条和后续HF探索4条。详见 experiment_index.json/csv、
+   checkpoint_verification.json。索引中的 epoch 保留原始零基编号；部分独立
+   审计使用一基编号，不能直接比较而忽略 +1。
+2. 最终代码既有14项单元测试通过，日志 unit_tests_verified.log。
+   本次使用本地 hsi 环境（PyTorch 2.5.0+cu124），CPU测试，线程数1。
+   这不是训练重跑或整套数据集重新推理。
+3. 旧 context 检查点经删除420个未参与forward的参数后，与最终模型的数值
+   等价性来自2026-10-28验证记录。本次另校验转换权重文件哈希。
+
+如何查一条结果
+experiment_index.json 的 runs 以 run_id 为主键，包含完整 configuration、
+checkpoint 路径与 SHA256、train/test split 哈希、源码哈希数量及 best_metrics。
+evidence/<run_id>/ 保存 manifest、best_metrics、status 和可用的独立审计。
+manifest.source_sha256 给出逐文件源码版本。完整 epochs.jsonl 保存在论文工作区
+交接包及索引指向的原归档中；仓库只提交小型元数据，权重保持外部归档。
+参考协议与runner位于 protocols/，源码快照与归档哈希位于 sources/ 和
+artifact_inventory.json。绝对路径用于本机定位，迁移时按归档名与哈希恢复。
+
+复现历史实验
+必须使用对应manifest的源码与runner、完整configuration、环境锁和相同数据划分。
+NUAA固定协议为 Adagrad / lr0.05恒定 / batch8 / seed40 / 300epochs；
+主实验为600epochs cosine，二者不能互换。IRSTD受控实验为256输入，不能与
+论文主表历史512输入结果混用。threshold=0.1，四项指标来自同一最佳IoU权重。
+Fa使用按连通域ID匹配后的未匹配区域面积；不要替换成旧面积相等判断实现。
+固定协议runner命令格式：
+python artifacts/run_nuaa_fixed005.py --mode run --matrix artifacts/nuaa_fixed005_matrix.json --job experts_multi_low
+此命令要求在隔离目录恢复原 /root/autodl-tmp/moe_reproduction 布局、
+code/experiment_runtime、data、artifacts 和锁定环境；不能直接在最终代码目录执行。
+其他runner和matrix以各run归档为准；HF试验有独立起始包，不能套用同一源码。
+
+最终代码与成绩的对应边界
+最终三专家最直接对应历史 experts_multi_low（NUAA：83.13/81.69/100.00/2.84，
+Fa单位10^-6，最佳一基epoch278）。它是原权重与原协议的结果。
+最终清理删除了未用模块，会改变初始化随机数消耗；同seed从头训练不能承诺逐位一致。
+最终 train_spar.py 的继承默认值为1000epochs、batch4，scheduler仅初始化时step，
+不是已冻结的300epochs/batch8 runner；复现上述成绩请使用归档runner。
+
+尚未完成的科研交接项（不因合并main而自动解决）
+1. 当前论文 main.tex 仍描述含独立高频专家的结构，NUAA主表82.08来自四专家
+   cosine600实验，不能直接标成最终三专家模型结果。需要按最终结构同步方法、
+   主表、摘要、结论及图，再选择相应实验协议验证。
+2. 论文主表历史IRSTD-1K 512结果的训练配置无法完全恢复；NUDT历史成绩亦缺少
+   完整可核查训练来源。39条受控记录中的IRSTD256实验不填补此缺口。
+3. 留存定性图未全部对应当前报告检查点；response_1.tex尚需与最终论文核对。
+4. 目前为单seed实验，且按测试IoU选最优；没有独立验证集选优或重复seed统计。
+5. 本次校验了划分文件哈希记录，未逐文件重算所有训练图像/掩码哈希，也未从零
+   重训全部实验。因此可确认“可追溯材料已整理”，不能保证所有历史结果均可重训复现。
+
+原始归档根目录
+C:/Users/tyf/Documents/Codex/2026-10-21/zhe/outputs/
+论文及完整交接证据
+D:/workspace/paper/moe/work/handoff_20261103/
+代码仓库
+D:/workspace/code/moe_irstd/

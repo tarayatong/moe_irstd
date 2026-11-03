@@ -1,0 +1,86 @@
+{
+  "run_id": "NUAA-SIRST_hf_joint_spatial_identity_hf_sparse300",
+  "best_epoch_one_based": 291,
+  "raw_metrics": {
+    "IoU": 0.8132137030995106,
+    "nIoU": 0.8037161983297353,
+    "Pd": 1.0,
+    "Fa": 1.1355377906976744e-05
+  },
+  "checks": {
+    "complete": true,
+    "epochs": true,
+    "sequence": true,
+    "finite_rows": true,
+    "fixed_lr": true,
+    "last_epoch": true,
+    "config": true,
+    "best_epoch": true,
+    "same_four_metrics": true,
+    "finite_weights": true,
+    "sources": true,
+    "config_hash": true,
+    "contract": true,
+    "original_sources": true,
+    "train_split": true,
+    "test_split": true
+  },
+  "local_checks": {
+    "zip_bytes_sha_crc": true,
+    "best_last_sha": true,
+    "contract_41_sha": true,
+    "configuration": true,
+    "epochs_and_same_four_metrics": true,
+    "split": true
+  },
+  "archive_sha256": "8811be9b0a28128e56e29b6780401c254071c1bd741581dc70e5fc8dfab179dc",
+  "best_sha256": "4e185f277e76f68b8d0223de5edb5bdc48160e2e8e887e6f04ecf3501e9d38f6",
+  "last_sha256": "870521ace40e9e431fd2c6ad05ca0856e23541716949ca94aae322242d1225e0",
+  "finished": "2026-10-27 22:30:45",
+  "environment": {
+    "python": "3.12.3 | packaged by Anaconda, Inc. | (main, May  6 2024, 19:46:43) [GCC 11.2.0]",
+    "executable": "/root/autodl-tmp/moe_reproduction/env_hf_joint_5090/bin/python",
+    "packages": {
+      "torch": "2.8.0+cu128",
+      "torchvision": "0.23.0+cu128",
+      "numpy": "2.0.2",
+      "scipy": "1.13.1",
+      "scikit-image": "0.24.0",
+      "pillow": "11.3.0",
+      "timm": "1.0.25",
+      "PyWavelets": "1.6.0",
+      "einops": "0.8.2",
+      "opencv-python-headless": "4.13.0.92",
+      "imageio": "2.37.2",
+      "tifffile": "2024.8.30"
+    },
+    "gpu": "NVIDIA GeForce RTX 5090, 580.105.08, 32607 MiB",
+    "comparison_limit": "Migrated from RTX4090D/torch2.5cu118 to RTX5090/torch2.8cu128 because old CUDA kernels cannot run on sm120; do not attribute all old/new differences exclusively to architecture.",
+    "loader_tensor_comparison": {
+      "matches": true,
+      "old_and_new": {
+        "train": {
+          "x_sha256": "a23cfdfbdeb68c2166328296b84e82e2bccfccfb3de568605bbc38604165d015",
+          "y_sha256": "ce2c9e6dc3d0ba32d4150693adfd88cfb98c7b0ce5ee8ce182e51e5df559a455",
+          "shape": [
+            8,
+            3,
+            256,
+            256
+          ]
+        },
+        "test": {
+          "x_sha256": "9a7190fb7994ca836643a3382bfda134106b7bcc13157325e2720d011619e8d3",
+          "y_sha256": "9fd13492d669facab60d140af500a85c1a449a51994c6881660cdbf18c212e85",
+          "shape": [
+            8,
+            3,
+            256,
+            256
+          ]
+        }
+      }
+    }
+  },
+  "comparison_limit": "RTX5090 torch2.8cu128 versus historical RTX4090D torch2.5cu118; historical comparison has software/hardware confounding"
+}

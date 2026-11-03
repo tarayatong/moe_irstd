@@ -1,0 +1,20 @@
+{
+  "run_id": "experts_single_spatial",
+  "protocol": "constant005_300",
+  "finished": "2026-10-23T18:32:10+08:00",
+  "verified_at": "2026-10-23T18:41:26+08:00",
+  "best_epoch_one_based": 239,
+  "raw_metrics": {
+    "IoU": 0.8168275862068965,
+    "nIoU": 0.7989065657859025,
+    "Pd": 0.9908256880733946,
+    "Fa": 7.274538971656977e-06
+  },
+  "display_metrics": {
+    "IoU": 81.68,
+    "nIoU": 79.89,
+    "Pd": 99.08,
+    "Fa": 7.27
+  },
+  "checkpoint_and_epoch_log_verified": true
+}

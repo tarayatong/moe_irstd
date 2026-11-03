@@ -17,7 +17,7 @@ Validated on 2026-10-28 using Python 3.12 / PyTorch 2.8, CPU only.
 - CUDA was not initialized; no training experiment was started.
 
 Reference checkpoint SHA256:
-`28661c0077a5646367374a641eb27309ddfb47f359bfd180594c8c1746f99370c`.
+`28661c0077a5646367374a641eb27309ddfb47f359bfd180594c8c1746f9370c`.
 
 The compatibility conversion preserves inference with the existing weights;
 it does not preserve optimizer state or claim identical from-scratch training.

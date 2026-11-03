@@ -1,0 +1,82 @@
+{
+  "run_id": "irstd_experts_multi_spatial",
+  "dataset": "IRSTD-1K",
+  "input_size": 256,
+  "protocol": "irstd_constant005_300",
+  "input_routing": "sparse",
+  "nuaa_reference": "experts_multi_spatial",
+  "group": "irstd_expert_configuration",
+  "finished": "2026-10-26 18:49:07",
+  "verified_at": "2026-10-26T18:49:15.798370+08:00",
+  "best_epoch_one_based": 210,
+  "configuration": {
+    "optimizer": "Adagrad",
+    "lr": 0.05,
+    "scheduler": "ConstantLR",
+    "epochs": 300,
+    "train_batch_size": 8,
+    "test_batch_size": 8,
+    "seed": 40,
+    "top_k": 2,
+    "noise_scale": 0.2,
+    "aux_loss_weight": 0.01,
+    "input_routing": "sparse",
+    "moe_stages": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "dilations": [
+      1,
+      2,
+      2,
+      3
+    ],
+    "patch_size": 1,
+    "threshold": 0.1,
+    "amp": false,
+    "dataset": "IRSTD",
+    "base_size": 256,
+    "crop_size": 256,
+    "expert_variant": "multi_spatial",
+    "scheduler_step": "after_each_epoch_factor_one",
+    "scheduler_initial_step": false,
+    "batch_policy": "fixed_per_input_resolution_after_capacity_test",
+    "scheduler_factor": 1.0
+  },
+  "metrics": {
+    "IoU": 0.7229254571026723,
+    "nIoU": 0.6697914659534657,
+    "Pd": 0.9285714285714286,
+    "Fa": 9.033810439987562e-06
+  },
+  "display_metrics": {
+    "IoU": 72.29,
+    "nIoU": 66.98,
+    "Pd": 92.86,
+    "Fa": 9.03
+  },
+  "checks": {
+    "dataset": true,
+    "input256": true,
+    "sparse_input": true,
+    "paired_configuration": true,
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "finite_rows": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "config_hash": true,
+    "source_hash": true,
+    "finite_weights": true,
+    "split_hashes": true
+  },
+  "best_pt_sha256": "2f7b63a8d3daefecdba1ebc26fd96fac663d227e37a1dca324b595c8a59c7951",
+  "last_pt_sha256": "34985e77744f481e9f1ae221de783637aa7f38d51abcfcac3ba1aa9328a3ef6f"
+}

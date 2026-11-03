@@ -1,0 +1,30 @@
+{
+  "run_id": "frequency_HLSR",
+  "protocol": "constant005_300",
+  "finished": "2026-10-23 22:27:11",
+  "verified_at": "2026-10-23T22:30:04.700487+08:00",
+  "best_epoch_one_based": 298,
+  "metrics": {
+    "IoU": 0.7494769874476988,
+    "nIoU": 0.7702052286741623,
+    "Pd": 0.981651376146789,
+    "Fa": 4.240523937136628e-05
+  },
+  "display_metrics": {
+    "IoU": 74.95,
+    "nIoU": 77.02,
+    "Pd": 98.17,
+    "Fa": 42.41
+  },
+  "checks": {
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "constant_lr": true,
+    "checkpoint_lr": true
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "run_id": "frequency_LGFW",
+  "protocol": "constant005_300",
+  "finished": "2026-10-23 23:32:49",
+  "verified_at": "2026-10-23T23:45:24.138862+08:00",
+  "best_epoch_one_based": 275,
+  "metrics": {
+    "IoU": 0.8112094395280236,
+    "nIoU": 0.7929805505732372,
+    "Pd": 0.9908256880733946,
+    "Fa": 9.403672329215116e-06
+  },
+  "display_metrics": {
+    "IoU": 81.12,
+    "nIoU": 79.3,
+    "Pd": 99.08,
+    "Fa": 9.4
+  },
+  "checks": {
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "constant_lr": true,
+    "checkpoint_lr": true
+  }
+}

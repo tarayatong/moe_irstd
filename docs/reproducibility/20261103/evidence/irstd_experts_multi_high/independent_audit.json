@@ -1,0 +1,82 @@
+{
+  "run_id": "irstd_experts_multi_high",
+  "dataset": "IRSTD-1K",
+  "input_size": 256,
+  "protocol": "irstd_constant005_300",
+  "input_routing": "sparse",
+  "nuaa_reference": "experts_multi_high",
+  "group": "irstd_expert_configuration",
+  "finished": "2026-10-27 01:09:12",
+  "verified_at": "2026-10-27T01:09:17.928920+08:00",
+  "best_epoch_one_based": 265,
+  "configuration": {
+    "optimizer": "Adagrad",
+    "lr": 0.05,
+    "scheduler": "ConstantLR",
+    "epochs": 300,
+    "train_batch_size": 8,
+    "test_batch_size": 8,
+    "seed": 40,
+    "top_k": 2,
+    "noise_scale": 0.2,
+    "aux_loss_weight": 0.01,
+    "input_routing": "sparse",
+    "moe_stages": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "dilations": [
+      1,
+      2,
+      2,
+      3
+    ],
+    "patch_size": 1,
+    "threshold": 0.1,
+    "amp": false,
+    "dataset": "IRSTD",
+    "base_size": 256,
+    "crop_size": 256,
+    "expert_variant": "multi_high",
+    "scheduler_step": "after_each_epoch_factor_one",
+    "scheduler_initial_step": false,
+    "batch_policy": "fixed_per_input_resolution_after_capacity_test",
+    "scheduler_factor": 1.0
+  },
+  "metrics": {
+    "IoU": 0.7069005308100623,
+    "nIoU": 0.6562363567465025,
+    "Pd": 0.9183673469387755,
+    "Fa": 1.1614899137126865e-05
+  },
+  "display_metrics": {
+    "IoU": 70.69,
+    "nIoU": 65.62,
+    "Pd": 91.84,
+    "Fa": 11.61
+  },
+  "checks": {
+    "dataset": true,
+    "input256": true,
+    "sparse_input": true,
+    "paired_configuration": true,
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "finite_rows": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "config_hash": true,
+    "source_hash": true,
+    "finite_weights": true,
+    "split_hashes": true
+  },
+  "best_pt_sha256": "159a2a0c6fee268418174d7c2d410221e51cca32a055330ff2884b79953c5e5c",
+  "last_pt_sha256": "0614c9db47b81631a98d48fd31353f3f643ee32f1de64fa409cfd6a2ae6d4655"
+}

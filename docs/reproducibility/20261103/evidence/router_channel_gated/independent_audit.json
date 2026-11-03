@@ -1,0 +1,34 @@
+{
+  "run_id": "router_channel_gated",
+  "protocol": "constant005_300",
+  "finished": "2026-10-24 05:56:15",
+  "verified_at": "2026-10-24T05:59:29.908400+08:00",
+  "best_epoch_one_based": 251,
+  "metrics": {
+    "IoU": 0.8182819383259912,
+    "nIoU": 0.8020590432729559,
+    "Pd": 0.9908256880733946,
+    "Fa": 7.62939453125e-06
+  },
+  "display_metrics": {
+    "IoU": 81.83,
+    "nIoU": 80.21,
+    "Pd": 99.08,
+    "Fa": 7.63
+  },
+  "checks": {
+    "complete": true,
+    "all_epochs": true,
+    "last_epoch": true,
+    "same_epoch": true,
+    "same_configuration": true,
+    "four_metrics": true,
+    "best_iou": true,
+    "finite_rows": true,
+    "constant_lr": true,
+    "checkpoint_lr": true,
+    "config_hash": true,
+    "source_hash": true
+  },
+  "best_pt_sha256": "7e9336f455485de779b0a0ab49c01f811ac4b2fdb3421941dd10e4de8acf8b7a"
+}

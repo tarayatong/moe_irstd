@@ -1,0 +1,7 @@
+{
+  "status": "complete",
+  "epochs": 300,
+  "best_iou": 0.7861271676300579,
+  "best_epoch": 179,
+  "finished": "2026-10-24 18:45:57"
+}

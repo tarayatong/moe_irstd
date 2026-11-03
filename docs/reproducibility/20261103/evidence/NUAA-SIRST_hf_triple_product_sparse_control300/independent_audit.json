@@ -1,0 +1,38 @@
+{
+  "run_id": "NUAA-SIRST_hf_triple_product_sparse_control300",
+  "checks": {
+    "complete": true,
+    "epochs": true,
+    "sequence": true,
+    "finite_rows": true,
+    "fixed_lr": true,
+    "last_epoch": true,
+    "config": true,
+    "best_same_epoch": true,
+    "best_metrics": true,
+    "finite_weights": true,
+    "source": true,
+    "config_hash": true,
+    "preflight": true,
+    "original_sources": true,
+    "contract": true,
+    "train_split": true,
+    "test_split": true
+  },
+  "best_epoch_one_based": 190,
+  "metrics": {
+    "IoU": 0.7443970117395945,
+    "nIoU": 0.7449684669312561,
+    "Pd": 0.981651376146789,
+    "Fa": 2.3597894712936048e-05,
+    "Fa_legacy": 1.5968500181686048e-05,
+    "images": 86,
+    "targets": 109,
+    "threshold": 0.1,
+    "test_loss": 0.5951236597327298
+  },
+  "best_sha256": "4e27846e433fc580f624364902e73aafcc4643a08ed0b78e8a469273165b6c3b",
+  "last_sha256": "1a3223833fa4af9267cb3370ebd597aae304a85e88b33d102fd2c4d757537fe1",
+  "finished": "2026-10-27 14:32:43",
+  "selection": "test highest IoU; one seed40 run"
+}
